@@ -152,7 +152,7 @@ export interface User {
   createdAt: string
 }
 
-export type UserRole = 'admin' | 'mosque_admin' | 'member' | 'visitor'
+export type UserRole = 'admin' | 'shura' | 'mosque_admin' | 'member' | 'visitor'
 
 // Imam Profile
 export interface Imam {
