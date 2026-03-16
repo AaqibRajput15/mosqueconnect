@@ -16,6 +16,19 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'google' | 'microsoft' | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (searchParams.get('switchAccount') !== '1') return
+
+    const switchAccount = async () => {
+      setIsSwitchingAccount(true)
+      await fetch('/api/auth/sign-out', { method: 'POST' })
+      setIsSwitchingAccount(false)
+    }
+
+    void switchAccount()
+  }, [searchParams])
 
   const signIn = async () => {
     setError('')
@@ -87,6 +100,12 @@ export default function SignInPage() {
     } finally {
       setOauthLoading(null)
     }
+  }
+
+  const signOutCurrentSession = async () => {
+    setIsSwitchingAccount(true)
+    await fetch('/api/auth/sign-out', { method: 'POST' })
+    setIsSwitchingAccount(false)
   }
 
   return (
