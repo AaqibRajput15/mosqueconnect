@@ -1,17 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createEventSchema } from '../schema'
 import { eventRepository } from '@/lib/backend/repositories'
-<<<<<<< HEAD
-import { requireApiPermission } from '@/lib/auth/server'
-
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireApiPermission(request, 'events:read')
-=======
 import { authorizeApiRequest } from '@/lib/auth/server'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await authorizeApiRequest(request, { resource: 'events', action: 'read' })
->>>>>>> main
   if ('error' in auth) return auth.error
   const { id } = await params
   const item = await eventRepository.getById(id)
@@ -19,8 +12,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireApiPermission(request, 'events:write')
-  if ('error' in auth) return auth.error
   const { id } = await params
   const existing = await eventRepository.getById(id)
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -40,11 +31,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-<<<<<<< HEAD
-  const auth = await requireApiPermission(request, 'events:write')
-  if ('error' in auth) return auth.error
-=======
->>>>>>> main
   const { id } = await params
   const existing = await eventRepository.getById(id)
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })

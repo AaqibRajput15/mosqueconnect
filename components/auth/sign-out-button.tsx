@@ -4,10 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-<<<<<<< HEAD
-=======
 import { fetchCsrfToken } from '@/lib/auth/client'
->>>>>>> main
 
 export function SignOutButton() {
   const [isLoading, setIsLoading] = useState(false)
@@ -15,11 +12,6 @@ export function SignOutButton() {
 
   const handleSignOut = async () => {
     setIsLoading(true)
-<<<<<<< HEAD
-    await fetch('/api/auth/sign-out', { method: 'POST' })
-    router.push('/auth/sign-in')
-    router.refresh()
-=======
 
     try {
       const csrfToken = await fetchCsrfToken()
@@ -37,7 +29,6 @@ export function SignOutButton() {
       router.push('/auth/sign-in')
       router.refresh()
     }
->>>>>>> main
   }
 
   return (
