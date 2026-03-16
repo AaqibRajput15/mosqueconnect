@@ -27,7 +27,7 @@ import {
   Award
 } from "lucide-react"
 import { mosqueAssessments, shuraMembers, mosques } from "@/lib/shura-mock-data"
-import { mockMosques } from "@/lib/mock-data"
+import { mockMosques } from "@/lib/services"
 
 // Combine mosques
 const allMosques = mosques.length > 0 ? mosques : mockMosques.map(m => ({

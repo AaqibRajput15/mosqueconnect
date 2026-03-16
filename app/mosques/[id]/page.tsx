@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { MosqueDetail } from '@/components/mosques/mosque-detail'
-import { getMosqueById } from '@/lib/mock-data'
+import { getMosqueById } from '@/lib/services'
 
 interface MosquePageProps {
   params: Promise<{ id: string }>

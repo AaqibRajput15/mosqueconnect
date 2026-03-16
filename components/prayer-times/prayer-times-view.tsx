@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { mockMosques } from '@/lib/mock-data'
+import { mockMosques } from '@/lib/services'
 
 interface PrayerTime {
   name: string

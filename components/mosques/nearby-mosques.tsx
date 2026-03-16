@@ -18,7 +18,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Slider } from '@/components/ui/slider'
-import { getNearbyMosques } from '@/lib/mock-data'
+import { getNearbyMosques } from '@/lib/services'
 import type { Mosque } from '@/lib/types'
 
 interface NearbyMosque extends Mosque {

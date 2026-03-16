@@ -48,7 +48,7 @@ import {
   getPrayerTimesByMosqueId,
   getImamsByMosqueId,
   getManagementByMosqueId
-} from '@/lib/mock-data'
+} from '@/lib/services'
 import type { Mosque, Imam, ManagementMember, LibraryBook, BookCategory, BookCondition } from '@/lib/types'
 import { useLibraryStore, bookCategoryLabels, conditionLabels, itemTypeLabels } from '@/lib/library-store'
 import { Input } from '@/components/ui/input'

@@ -3,7 +3,7 @@ import { Calendar, Clock, MapPin, Users, ArrowRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { mockEvents, getMosqueById } from '@/lib/mock-data'
+import { mockEvents, getMosqueById } from '@/lib/services'
 import type { EventCategory } from '@/lib/types'
 
 const categoryColors: Record<EventCategory, string> = {

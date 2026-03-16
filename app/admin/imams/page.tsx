@@ -38,7 +38,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { imams as mockImamData, mosques } from "@/lib/mock-data"
+import { imams as mockImamData, mosques } from "@/lib/services"
 import type { Imam } from "@/lib/types"
 
 const imams = mockImamData

@@ -34,7 +34,7 @@ import {
   mockFinanceRecords,
   mockMosques,
   getMosqueById 
-} from '@/lib/mock-data'
+} from '@/lib/services'
 import type { AnnouncementCategory, FinanceCategory } from '@/lib/types'
 
 const announcementCategoryColors: Record<AnnouncementCategory, string> = {

@@ -16,7 +16,7 @@ import { Footer } from '@/components/footer'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { mockEvents, getMosqueById } from '@/lib/mock-data'
+import { mockEvents, getMosqueById } from '@/lib/services'
 import type { EventCategory } from '@/lib/types'
 
 interface EventPageProps {

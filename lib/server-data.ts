@@ -1,0 +1,54 @@
+import { announcements, donationGoals, donations, events, expenses, imams, managementMembers, mockAnnouncements, mockEvents, mockFinanceRecords, mockMosques, mockPrayerTimes } from './mock-data'
+import { imamAppointments, mosqueAssessments, mosqueRegistrations, mosqueVisits, shuraMeetings, shuraMembers } from './shura-mock-data'
+import type { Announcement, Event, FinanceRecord, Mosque, MosqueAssessment, MosqueRegistration, MosqueVisit, ShuraMeeting, ShuraMember, User, ImamAppointment } from './types'
+
+export interface AppDataStore {
+  mosques: Mosque[]
+  events: Event[]
+  announcements: Announcement[]
+  financeRecords: FinanceRecord[]
+  users: User[]
+  shura: {
+    members: ShuraMember[]
+    visits: MosqueVisit[]
+    meetings: ShuraMeeting[]
+    registrations: MosqueRegistration[]
+    assessments: MosqueAssessment[]
+    imamAppointments: ImamAppointment[]
+  }
+}
+
+const now = new Date().toISOString()
+
+export const appDataStore: AppDataStore = {
+  mosques: [...mockMosques],
+  events: [...mockEvents],
+  announcements: [...mockAnnouncements],
+  financeRecords: [...mockFinanceRecords],
+  users: [
+    { id: 'user-1', email: 'admin@mosqueconnect.org', name: 'System Admin', role: 'admin', createdAt: now },
+    { id: 'user-2', email: 'imam@alnoor.org', name: 'Imam Abdullah', role: 'mosque_admin', mosqueId: '1', createdAt: now },
+    { id: 'user-3', email: 'member@example.org', name: 'Community Member', role: 'member', mosqueId: '2', createdAt: now },
+  ],
+  shura: {
+    members: [...shuraMembers],
+    visits: [...mosqueVisits],
+    meetings: [...shuraMeetings],
+    registrations: [...mosqueRegistrations],
+    assessments: [...mosqueAssessments],
+    imamAppointments: [...imamAppointments],
+  }
+}
+
+export const legacyCompatibility = {
+  donations,
+  expenses,
+  donationGoals,
+  announcements,
+  events,
+  prayerTimes: mockPrayerTimes,
+  imams,
+  managementMembers,
+}
+
+export const generateId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`

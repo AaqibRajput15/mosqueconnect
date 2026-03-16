@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Pencil, Trash2, Calendar } from "lucide-react"
-import { events as mockEventData, mosques } from "@/lib/mock-data"
+import { events as mockEventData, mosques } from "@/lib/services"
 import type { Event } from "@/lib/types"
 
 const events = mockEventData

@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ImamDetailView } from '@/components/mosques/imam-detail-view'
-import { getMosqueById, getImamById } from '@/lib/mock-data'
+import { getMosqueById, getImamById } from '@/lib/services'
 
 interface ImamPageProps {
   params: Promise<{ id: string; imamId: string }>

@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { mockEvents, getMosqueById } from '@/lib/mock-data'
+import { mockEvents, getMosqueById } from '@/lib/services'
 import type { EventCategory } from '@/lib/types'
 
 const categoryColors: Record<EventCategory, string> = {

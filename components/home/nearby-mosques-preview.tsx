@@ -5,7 +5,7 @@ import { MapPin, Users, Clock, ArrowRight, CheckCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { mockMosques } from '@/lib/mock-data'
+import { mockMosques } from '@/lib/services'
 
 export function NearbyMosquesPreview() {
   const mosques = mockMosques.slice(0, 3)
