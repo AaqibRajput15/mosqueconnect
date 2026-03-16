@@ -5,6 +5,19 @@ import { verifyPassword } from './password'
 
 export type AuthProvider = 'credentials' | 'google' | 'microsoft'
 
+export type AuthErrorCode =
+  | 'invalid_credentials'
+  | 'account_exists'
+  | 'provider_mismatch'
+  | 'account_not_found'
+
+interface AuthAccount {
+  email: string
+  userId: string
+  provider: AuthProvider
+  password?: string
+}
+
 export interface SessionRecord {
   token: string
   userId: string
