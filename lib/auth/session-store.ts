@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto'
 import type { User } from '@/lib/types'
 import { appDataStore, generateId } from '@/lib/server-data'
 import { verifyPassword } from './password'
@@ -175,4 +174,8 @@ export function rotateSessionsForPrivilegeChange(userId: string) {
     const rotated = createSessionRecord(userId, session.provider)
     sessions.set(rotated.token, rotated)
   }
+}
+
+export function clearAuthStateForTests() {
+  sessions.clear()
 }

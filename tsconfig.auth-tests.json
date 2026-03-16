@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": ".auth-tests-dist",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "incremental": false,
+    "isolatedModules": false,
+    "rootDir": "."
+  },
+  "include": [
+    "tests/auth/**/*.ts",
+    "lib/auth/**/*.ts",
+    "lib/server-data.ts",
+    "lib/mock-data.ts",
+    "lib/shura-mock-data.ts",
+    "lib/types.ts",
+    "app/api/auth/sign-in/route.ts",
+    "app/api/auth/sign-up/route.ts",
+    "app/api/auth/oauth/callback/route.ts",
+    "app/api/auth/sign-out/route.ts",
+    "app/api/auth/session/route.ts"
+  ]
+}
