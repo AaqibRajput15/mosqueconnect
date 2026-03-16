@@ -1,6 +1,6 @@
-import { randomUUID } from 'crypto'
 import type { User } from '@/lib/types'
-import { appDataStore } from '@/lib/server-data'
+import { appDataStore, generateId } from '@/lib/server-data'
+import { createAuthToken } from './utils'
 
 export type AuthProvider = 'credentials' | 'google' | 'microsoft'
 
@@ -19,7 +19,7 @@ export function createSession(email: string, provider: AuthProvider): SessionRec
   const user = appDataStore.users.find((u) => u.email.toLowerCase() === email.toLowerCase())
   if (!user) return null
 
-  const token = randomUUID()
+  const token = createAuthToken()
   const now = Date.now()
   const session: SessionRecord = {
     token,
@@ -31,6 +31,21 @@ export function createSession(email: string, provider: AuthProvider): SessionRec
 
   sessions.set(token, session)
   return session
+}
+
+export function createUser(email: string, name: string): User {
+  const existing = appDataStore.users.find((u) => u.email.toLowerCase() === email.toLowerCase())
+  if (existing) return existing
+
+  const user: User = {
+    id: generateId('user'),
+    email,
+    name,
+    role: 'member',
+    createdAt: new Date().toISOString(),
+  }
+  appDataStore.users.push(user)
+  return user
 }
 
 export function revokeSession(token: string) {
@@ -47,4 +62,8 @@ export function getUserForSession(token: string | undefined): User | null {
   }
 
   return appDataStore.users.find((u) => u.id === session.userId) ?? null
+}
+
+export function clearAuthStateForTests() {
+  sessions.clear()
 }

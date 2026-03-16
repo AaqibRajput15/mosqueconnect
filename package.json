@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "pnpm test:auth",
+    "test:auth": "pnpm exec tsc -p tsconfig.auth-tests.json && node --test .auth-tests-dist/tests/auth/*.test.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
