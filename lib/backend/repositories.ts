@@ -133,7 +133,13 @@ export const userRepository = createCrudRepository<User>({
   listFallback: () => appDataStore.users,
   getByIdFallback: (id) => appDataStore.users.find((u) => u.id === id) ?? null,
   createFallback: (payload) => {
-    const row = { ...payload, id: generateId('user'), createdAt: new Date().toISOString() } as User
+    const row = {
+      ...payload,
+      id: generateId('user'),
+      isActive: payload.isActive ?? true,
+      onboardingCompleted: payload.onboardingCompleted ?? false,
+      createdAt: new Date().toISOString(),
+    } as User
     appDataStore.users.push(row)
     return row
   },

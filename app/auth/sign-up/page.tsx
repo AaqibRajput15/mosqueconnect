@@ -3,36 +3,25 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { renderInlineAuthError, validateEmail, validateSignUpForm } from '@/components/auth/auth-form-utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { renderInlineAuthError, validateSignInForm } from '@/components/auth/auth-form-utils'
 
-export default function SignInPage() {
-  const [email, setEmail] = useState('admin@mosqueconnect.org')
+export default function SignUpPage() {
+  const [email, setEmail] = useState('new.member@example.org')
   const [password, setPassword] = useState('password123')
+  const [confirmPassword, setConfirmPassword] = useState('password123')
   const [errorCode, setErrorCode] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'google' | 'microsoft' | null>(null)
   const router = useRouter()
 
-  const signIn = async () => {
-    setError('')
-
-    if (provider === 'google' || provider === 'microsoft') {
-      window.location.href = `/api/auth/oauth/${provider}/start`
-      return
-    }
-
-    const response = await fetch('/api/auth/sign-in', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, provider }),
-    })
-
-    if (!response.ok) {
-      setError('Unable to sign in with the selected provider/account.')
+  const signUp = async () => {
+    const formError = validateSignUpForm(email, password, confirmPassword)
+    if (formError) {
+      setErrorCode(formError)
       return
     }
 
@@ -40,7 +29,7 @@ export default function SignInPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/auth/sign-in', {
+      const response = await fetch('/api/auth/sign-up', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -59,8 +48,8 @@ export default function SignInPage() {
     }
   }
 
-  const signInWithOAuth = async (provider: 'google' | 'microsoft') => {
-    const emailError = validateSignInForm(email, 'oauth-placeholder')
+  const signUpWithOAuth = async (provider: 'google' | 'microsoft') => {
+    const emailError = validateEmail(email)
     if (emailError) {
       setErrorCode(emailError)
       return
@@ -73,7 +62,7 @@ export default function SignInPage() {
       const response = await fetch(`/api/auth/oauth/${provider}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, intent: 'sign-in' }),
+        body: JSON.stringify({ email, intent: 'sign-up' }),
       })
 
       if (!response.ok) {
@@ -93,8 +82,8 @@ export default function SignInPage() {
     <main className="container mx-auto max-w-md py-16">
       <Card>
         <CardHeader>
-          <CardTitle>Sign in</CardTitle>
-          <CardDescription>Use email/password or continue with your provider.</CardDescription>
+          <CardTitle>Create account</CardTitle>
+          <CardDescription>Sign up with email/password or use an OAuth provider.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -117,34 +106,44 @@ export default function SignInPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm password</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              value={confirmPassword}
+              disabled={isLoading || Boolean(oauthLoading)}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
 
           {renderInlineAuthError(errorCode)}
 
-          <Button className="w-full" onClick={signIn} disabled={isLoading || Boolean(oauthLoading)}>
-            {isLoading ? 'Signing in...' : 'Sign in'}
+          <Button className="w-full" onClick={signUp} disabled={isLoading || Boolean(oauthLoading)}>
+            {isLoading ? 'Creating account...' : 'Create account'}
           </Button>
 
           <div className="grid grid-cols-2 gap-2">
             <Button
               variant="outline"
-              onClick={() => signInWithOAuth('google')}
+              onClick={() => signUpWithOAuth('google')}
               disabled={isLoading || Boolean(oauthLoading)}
             >
-              {oauthLoading === 'google' ? 'Connecting...' : 'Continue with Google'}
+              {oauthLoading === 'google' ? 'Connecting...' : 'Sign up with Google'}
             </Button>
             <Button
               variant="outline"
-              onClick={() => signInWithOAuth('microsoft')}
+              onClick={() => signUpWithOAuth('microsoft')}
               disabled={isLoading || Boolean(oauthLoading)}
             >
-              {oauthLoading === 'microsoft' ? 'Connecting...' : 'Continue with Microsoft'}
+              {oauthLoading === 'microsoft' ? 'Connecting...' : 'Sign up with Microsoft'}
             </Button>
           </div>
 
           <p className="text-sm text-muted-foreground">
-            New here?{' '}
-            <Link className="underline" href="/auth/sign-up">
-              Create an account
+            Already have an account?{' '}
+            <Link className="underline" href="/auth/sign-in">
+              Sign in
             </Link>
           </p>
         </CardContent>
