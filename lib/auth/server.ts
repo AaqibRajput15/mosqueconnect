@@ -7,22 +7,63 @@ import { logAudit } from './audit-log'
 
 export const AUTH_COOKIE = 'mc_session'
 
+const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+export const roleHomeMap: Record<UserRole, string> = {
+  admin: '/admin',
+  shura: '/shura',
+  mosque_admin: '/community',
+  member: '/community',
+  visitor: '/mosques',
+}
+
+function getProtectedRoute(pathname: string): '/admin' | '/shura' | null {
+  if (pathname.startsWith('/admin')) return '/admin'
+  if (pathname.startsWith('/shura')) return '/shura'
+  return null
+}
+
+export function getDefaultDashboard(role: UserRole) {
+  return roleHomeMap[role]
+}
+
 export async function getSessionUser() {
   const token = (await cookies()).get(AUTH_COOKIE)?.value
   return getUserForSession(token)
 }
 
-export async function requireRouteAccess(route: '/admin' | '/shura') {
+export async function guardRouteAccess(pathname: string) {
   const user = await getSessionUser()
-  if (!user) {
-    return { redirect: NextResponse.redirect(new URL('/unauthorized', process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000')) }
+
+  if (pathname.startsWith('/auth')) {
+    if (user) return { redirectPath: getDefaultDashboard(user.role) }
+    return { user: null }
   }
 
-  if (!canAccessRoute(user.role, route)) {
-    return { redirect: NextResponse.redirect(new URL('/forbidden', process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000')) }
+  const protectedRoute = getProtectedRoute(pathname)
+
+  if (!protectedRoute) {
+    return { user }
+  }
+
+  if (!user) {
+    return { redirectPath: '/auth/sign-in' }
+  }
+
+  if (!canAccessRoute(user.role, protectedRoute)) {
+    return { redirectPath: '/forbidden' }
   }
 
   return { user }
+}
+
+export async function requireRouteAccess(pathname: string) {
+  const guardResult = await guardRouteAccess(pathname)
+  if (guardResult.redirectPath) {
+    return { redirect: NextResponse.redirect(new URL(guardResult.redirectPath, APP_ORIGIN)) }
+  }
+
+  return { user: guardResult.user ?? null }
 }
 
 export async function requireApiPermission(request: Request, permission: Permission) {

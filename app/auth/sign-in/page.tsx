@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,21 @@ export default function SignInPage() {
   const [email, setEmail] = useState('admin@mosqueconnect.org')
   const [provider, setProvider] = useState<'credentials' | 'google' | 'microsoft'>('credentials')
   const [error, setError] = useState('')
+  const [isSwitchingAccount, setIsSwitchingAccount] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (searchParams.get('switchAccount') !== '1') return
+
+    const switchAccount = async () => {
+      setIsSwitchingAccount(true)
+      await fetch('/api/auth/sign-out', { method: 'POST' })
+      setIsSwitchingAccount(false)
+    }
+
+    void switchAccount()
+  }, [searchParams])
 
   const signIn = async () => {
     setError('')
@@ -26,8 +40,15 @@ export default function SignInPage() {
       return
     }
 
-    router.push('/admin')
+    const payload = (await response.json()) as { redirectTo?: string }
+    router.push(payload.redirectTo ?? '/admin')
     router.refresh()
+  }
+
+  const signOutCurrentSession = async () => {
+    setIsSwitchingAccount(true)
+    await fetch('/api/auth/sign-out', { method: 'POST' })
+    setIsSwitchingAccount(false)
   }
 
   return (
@@ -49,6 +70,9 @@ export default function SignInPage() {
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button className="w-full" onClick={signIn}>Continue</Button>
+          <Button className="w-full" variant="outline" onClick={signOutCurrentSession} disabled={isSwitchingAccount}>
+            {isSwitchingAccount ? 'Switching account…' : 'Switch account'}
+          </Button>
           <p className="text-xs text-muted-foreground">Try: admin@mosqueconnect.org, imam@alnoor.org, member@example.org</p>
         </CardContent>
       </Card>
