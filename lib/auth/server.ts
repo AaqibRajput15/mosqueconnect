@@ -1,8 +1,15 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import type { UserRole } from '@/lib/types'
+import type { User } from '@/lib/types'
 import { getUserForSession } from './session-store'
-import { canAccessRoute, hasPermission, type Permission } from './permissions'
+import {
+  canAccessRoute,
+  evaluatePermission,
+  type AuthorizationScope,
+  type Permission,
+  type PermissionAction,
+  type PermissionResource,
+} from './permissions'
 import { logAudit } from './audit-log'
 import { canAccessPrivilegedRoute } from './email-verification-policy'
 
@@ -78,12 +85,25 @@ export async function requireApiPermission(request: Request, permission: Permiss
   const user = getUserForSession(token)
 
   if (!user) {
-    logAudit({ action: `api:${permission}`, path: request.url, status: 'denied', metadata: { reason: 'unauthenticated' } })
+    logApiAuthorization(request, permission, 'denied', undefined, {
+      reason: 'unauthenticated',
+      scope: options.scope,
+    })
     return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   }
 
-  if (!hasPermission(user.role as UserRole, permission)) {
-    logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'denied', metadata: { reason: 'forbidden' } })
+  const scope: AuthorizationScope = {
+    mosqueId: options.scope?.mosqueId ?? user.mosqueId,
+    tenantId: options.scope?.tenantId,
+  }
+
+  const evaluation = evaluatePermission({ permission, role: user.role, user, scope })
+
+  if (!evaluation.allowed) {
+    logApiAuthorization(request, permission, 'denied', user, {
+      reason: evaluation.reason,
+      scope,
+    })
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
 
