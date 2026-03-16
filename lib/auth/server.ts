@@ -83,6 +83,7 @@ export async function requireApiPermission(request: Request, permission: Permiss
     ?.split('=')[1]
 
   const user = getUserForSession(token)
+  const context = buildAuditContext(request)
 
   if (!user) {
     logApiAuthorization(request, permission, 'denied', undefined, {

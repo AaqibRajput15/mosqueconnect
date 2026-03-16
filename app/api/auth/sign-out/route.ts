@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { AUTH_COOKIE } from '@/lib/auth/server'
-import { revokeSession } from '@/lib/auth/session-store'
+import { getUserForSession, revokeSession } from '@/lib/auth/session-store'
+import { buildAuditContext, logAudit } from '@/lib/auth/audit-log'
 
 export async function POST(request: Request) {
   const cookieHeader = request.headers.get('cookie') ?? ''
