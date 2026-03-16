@@ -83,6 +83,7 @@ create table if not exists users (
   "defaultRedirectPath" text,
   "avatarUrl" text,
   phone text,
+  "emailVerified" boolean not null default false,
   "createdAt" timestamptz not null default now()
 );
 

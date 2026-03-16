@@ -152,6 +152,7 @@ export interface User {
   defaultRedirectPath?: string
   avatarUrl?: string
   phone?: string
+  emailVerified?: boolean
   createdAt: string
 }
 
