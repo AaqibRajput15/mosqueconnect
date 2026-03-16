@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import type { UserRole } from '@/lib/types'
 import { getUserForSession } from './session-store'
 import { canAccessRoute, hasPermission, type Permission } from './permissions'
-import { logAudit } from './audit-log'
+import { buildAuditContext, logAudit } from './audit-log'
 
 export const AUTH_COOKIE = 'mc_session'
 
@@ -34,17 +34,47 @@ export async function requireApiPermission(request: Request, permission: Permiss
     ?.split('=')[1]
 
   const user = getUserForSession(token)
+  const context = buildAuditContext(request)
 
   if (!user) {
-    logAudit({ action: `api:${permission}`, path: request.url, status: 'denied', metadata: { reason: 'unauthenticated' } })
+    void logAudit({
+      eventType: 'rbac.denied',
+      targetResource: context.targetResource,
+      requestId: context.requestId,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+      outcome: 'failure',
+      metadata: { reason: 'unauthenticated', permission },
+    })
     return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   }
 
   if (!hasPermission(user.role as UserRole, permission)) {
-    logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'denied', metadata: { reason: 'forbidden' } })
+    void logAudit({
+      eventType: 'rbac.denied',
+      actorId: user.id,
+      actorRole: user.role,
+      targetResource: context.targetResource,
+      requestId: context.requestId,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+      outcome: 'failure',
+      metadata: { reason: 'forbidden', permission },
+    })
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
 
-  logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'allowed' })
+  void logAudit({
+    eventType: 'api.sensitive_action',
+    actorId: user.id,
+    actorRole: user.role,
+    targetResource: context.targetResource,
+    requestId: context.requestId,
+    ipAddress: context.ipAddress,
+    userAgent: context.userAgent,
+    outcome: 'success',
+    metadata: { permission },
+  })
+
   return { user }
 }
