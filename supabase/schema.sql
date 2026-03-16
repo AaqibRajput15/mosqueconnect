@@ -78,10 +78,29 @@ create table if not exists users (
   name text not null,
   role text not null,
   "mosqueId" text,
+  "isActive" boolean not null default true,
+  "onboardingCompleted" boolean not null default false,
+  "defaultRedirectPath" text,
   "avatarUrl" text,
   phone text,
+  "emailVerified" boolean not null default false,
   "createdAt" timestamptz not null default now()
 );
+
+create table if not exists auth_identities (
+  id bigserial primary key,
+  "userId" text not null references users(id) on delete cascade,
+  provider text not null,
+  "providerUserId" text not null,
+  email text,
+  "emailVerified" boolean not null default false,
+  "lastLoginAt" timestamptz,
+  "createdAt" timestamptz not null default now(),
+  unique (provider, "providerUserId")
+);
+
+create index if not exists auth_identities_user_id_idx on auth_identities ("userId");
+create index if not exists auth_identities_email_idx on auth_identities (email);
 
 create table if not exists shura_members (id text primary key, payload jsonb not null);
 create table if not exists shura_visits (id text primary key, payload jsonb not null);
@@ -89,3 +108,23 @@ create table if not exists shura_meetings (id text primary key, payload jsonb no
 create table if not exists shura_registrations (id text primary key, payload jsonb not null);
 create table if not exists shura_assessments (id text primary key, payload jsonb not null);
 create table if not exists shura_imam_appointments (id text primary key, payload jsonb not null);
+
+-- Durable authentication session storage
+create extension if not exists pgcrypto;
+
+create table if not exists auth_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null references users(id) on delete cascade,
+  provider text not null,
+  session_token_hash text not null unique,
+  ip_address inet,
+  user_agent text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null,
+  revoked_at timestamptz
+);
+
+create index if not exists auth_sessions_user_id_idx on auth_sessions (user_id);
+create index if not exists auth_sessions_expires_at_idx on auth_sessions (expires_at);
+create index if not exists auth_sessions_revoked_at_idx on auth_sessions (revoked_at);

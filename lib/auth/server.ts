@@ -11,44 +11,28 @@ import {
   type PermissionResource,
 } from './permissions'
 import { logAudit } from './audit-log'
+import { canAccessPrivilegedRoute } from './email-verification-policy'
 
 export const AUTH_COOKIE = 'mc_session'
 
-export interface AuthorizedApiContext {
-  user: User
-  role: User['role']
-  scope: AuthorizationScope
+const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+export const roleHomeMap: Record<UserRole, string> = {
+  admin: '/admin',
+  shura: '/shura',
+  mosque_admin: '/community',
+  member: '/community',
+  visitor: '/mosques',
 }
 
-interface AuthorizationOptions {
-  resource: PermissionResource
-  action: PermissionAction
-  scope?: AuthorizationScope
+function getProtectedRoute(pathname: string): '/admin' | '/shura' | null {
+  if (pathname.startsWith('/admin')) return '/admin'
+  if (pathname.startsWith('/shura')) return '/shura'
+  return null
 }
 
-function getTokenFromCookieHeader(cookieHeader: string) {
-  return cookieHeader
-    .split(';')
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${AUTH_COOKIE}=`))
-    ?.split('=')[1]
-}
-
-function logApiAuthorization(
-  request: Request,
-  permission: Permission,
-  status: 'allowed' | 'denied',
-  user?: User,
-  metadata?: Record<string, unknown>,
-) {
-  logAudit({
-    action: `api:${permission}`,
-    actorId: user?.id,
-    actorRole: user?.role,
-    path: request.url,
-    status,
-    metadata,
-  })
+export function getDefaultDashboard(role: UserRole) {
+  return roleHomeMap[role]
 }
 
 export async function getSessionUser() {
@@ -56,30 +40,48 @@ export async function getSessionUser() {
   return getUserForSession(token)
 }
 
-export async function requireRouteAccess(route: '/admin' | '/shura') {
+export async function guardRouteAccess(pathname: string) {
   const user = await getSessionUser()
-  if (!user) {
-    return {
-      redirect: NextResponse.redirect(
-        new URL('/unauthorized', process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
-      ),
-    }
+
+  if (pathname.startsWith('/auth')) {
+    if (user) return { redirectPath: getDefaultDashboard(user.role) }
+    return { user: null }
   }
 
-  if (!canAccessRoute(user.role, route)) {
-    return {
-      redirect: NextResponse.redirect(
-        new URL('/forbidden', process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
-      ),
-    }
+  const protectedRoute = getProtectedRoute(pathname)
+
+  if (!protectedRoute) {
+    return { user }
+  }
+
+  if (!user) {
+    return { redirectPath: '/auth/sign-in' }
+  }
+
+  if (!canAccessRoute(user.role, protectedRoute)) {
+    return { redirectPath: '/forbidden' }
   }
 
   return { user }
 }
 
-export async function authorizeApiRequest(request: Request, options: AuthorizationOptions) {
-  const permission = `${options.resource}:${options.action}` as Permission
-  const token = getTokenFromCookieHeader(request.headers.get('cookie') ?? '')
+export async function requireRouteAccess(pathname: string) {
+  const guardResult = await guardRouteAccess(pathname)
+  if (guardResult.redirectPath) {
+    return { redirect: NextResponse.redirect(new URL(guardResult.redirectPath, APP_ORIGIN)) }
+  }
+
+  return { user: guardResult.user ?? null }
+}
+
+export async function requireApiPermission(request: Request, permission: Permission) {
+  const cookieHeader = request.headers.get('cookie') ?? ''
+  const token = cookieHeader
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${AUTH_COOKIE}=`))
+    ?.split('=')[1]
+
   const user = getUserForSession(token)
 
   if (!user) {
@@ -105,12 +107,11 @@ export async function authorizeApiRequest(request: Request, options: Authorizati
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
 
-  const context: AuthorizedApiContext = {
-    user,
-    role: user.role,
-    scope,
+  if (!canAccessPrivilegedRoute(user)) {
+    logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'denied', metadata: { reason: 'email_unverified' } })
+    return { error: NextResponse.json({ error: 'Email verification required' }, { status: 403 }) }
   }
 
-  logApiAuthorization(request, permission, 'allowed', user, { scope })
-  return { context }
+  logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'allowed' })
+  return { user }
 }
