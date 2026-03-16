@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "pnpm test:auth",
-    "test:auth": "pnpm exec tsc -p tsconfig.auth-tests.json && node --test .auth-tests-dist/tests/auth/*.test.js"
+    "test:auth": "pnpm exec tsc -p tsconfig.auth-tests.json && node --test .auth-tests-dist/tests/auth/*.test.js",
+    "check:merge-conflicts": "bash scripts/check-merge-conflicts.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
