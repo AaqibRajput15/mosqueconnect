@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
-import { type AuthProvider, createSession } from '@/lib/auth/session-store'
+import { appDataStore } from '@/lib/server-data'
+import type { User } from '@/lib/types'
+import { createSession } from '@/lib/auth/session-store'
 import { getAuthRateLimitKey, getLockoutRetryAfterSeconds, isLockedOut, registerAuthFailure, registerAuthSuccess } from '@/lib/auth/rate-limit'
 import { setAuthCookie } from '@/lib/auth/cookies'
 import { validateCsrfToken } from '@/lib/auth/csrf'
@@ -10,8 +12,8 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const email = String(body.email ?? '').trim()
-  const provider = (body.provider ?? 'credentials') as AuthProvider
+  const email = String(body.email ?? '').trim().toLowerCase()
+  const name = String(body.name ?? '').trim() || email
   const key = getAuthRateLimitKey(request, email)
 
   if (isLockedOut(key)) {
@@ -21,14 +23,29 @@ export async function POST(request: Request) {
     )
   }
 
-  const session = createSession(email, provider)
+  if (!email || appDataStore.users.some((u) => u.email.toLowerCase() === email)) {
+    registerAuthFailure(key)
+    return NextResponse.json({ error: 'Unable to create account' }, { status: 400 })
+  }
+
+  const user: User = {
+    id: `user-${Date.now()}`,
+    name,
+    email,
+    role: 'member',
+    mosqueId: undefined,
+    createdAt: new Date().toISOString(),
+  }
+
+  appDataStore.users.push(user)
+  const session = createSession(email, 'credentials')
   if (!session) {
     registerAuthFailure(key)
-    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+    return NextResponse.json({ error: 'Unable to create account' }, { status: 500 })
   }
 
   registerAuthSuccess(key)
-  const response = NextResponse.json({ ok: true })
+  const response = NextResponse.json({ ok: true, user }, { status: 201 })
   setAuthCookie(response, session.token)
   return response
 }

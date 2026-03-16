@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { fetchCsrfToken } from '@/lib/auth/client'
 
 export default function SignInPage() {
   const [email, setEmail] = useState('admin@mosqueconnect.org')
@@ -15,19 +16,29 @@ export default function SignInPage() {
 
   const signIn = async () => {
     setError('')
-    const response = await fetch('/api/auth/sign-in', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, provider }),
-    })
 
-    if (!response.ok) {
+    try {
+      const csrfToken = await fetchCsrfToken()
+      const response = await fetch('/api/auth/sign-in', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrf-token': csrfToken,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email, provider }),
+      })
+
+      if (!response.ok) {
+        setError('Unable to sign in with the selected provider/account.')
+        return
+      }
+
+      router.push('/admin')
+      router.refresh()
+    } catch {
       setError('Unable to sign in with the selected provider/account.')
-      return
     }
-
-    router.push('/admin')
-    router.refresh()
   }
 
   return (

@@ -1,15 +1,16 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { UserRole } from '@/lib/types'
-import { getUserForSession } from './session-store'
-import { canAccessRoute, hasPermission, type Permission } from './permissions'
+import { parseCookies } from './csrf'
+import { hasPermission, canAccessRoute, type Permission } from './permissions'
 import { logAudit } from './audit-log'
+import { resolveUserSession } from './session-store'
 
 export const AUTH_COOKIE = 'mc_session'
 
 export async function getSessionUser() {
   const token = (await cookies()).get(AUTH_COOKIE)?.value
-  return getUserForSession(token)
+  return resolveUserSession(token).user
 }
 
 export async function requireRouteAccess(route: '/admin' | '/shura') {
@@ -26,14 +27,9 @@ export async function requireRouteAccess(route: '/admin' | '/shura') {
 }
 
 export async function requireApiPermission(request: Request, permission: Permission) {
-  const cookieHeader = request.headers.get('cookie') ?? ''
-  const token = cookieHeader
-    .split(';')
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${AUTH_COOKIE}=`))
-    ?.split('=')[1]
-
-  const user = getUserForSession(token)
+  const token = parseCookies(request)[AUTH_COOKIE]
+  const resolved = resolveUserSession(token)
+  const user = resolved.user
 
   if (!user) {
     logAudit({ action: `api:${permission}`, path: request.url, status: 'denied', metadata: { reason: 'unauthenticated' } })
@@ -46,5 +42,5 @@ export async function requireApiPermission(request: Request, permission: Permiss
   }
 
   logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'allowed' })
-  return { user }
+  return { user, rotatedToken: resolved.rotatedToken }
 }
