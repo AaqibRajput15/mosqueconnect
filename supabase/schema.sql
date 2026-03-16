@@ -78,10 +78,28 @@ create table if not exists users (
   name text not null,
   role text not null,
   "mosqueId" text,
+  "isActive" boolean not null default true,
+  "onboardingCompleted" boolean not null default false,
+  "defaultRedirectPath" text,
   "avatarUrl" text,
   phone text,
   "createdAt" timestamptz not null default now()
 );
+
+create table if not exists auth_identities (
+  id bigserial primary key,
+  "userId" text not null references users(id) on delete cascade,
+  provider text not null,
+  "providerUserId" text not null,
+  email text,
+  "emailVerified" boolean not null default false,
+  "lastLoginAt" timestamptz,
+  "createdAt" timestamptz not null default now(),
+  unique (provider, "providerUserId")
+);
+
+create index if not exists auth_identities_user_id_idx on auth_identities ("userId");
+create index if not exists auth_identities_email_idx on auth_identities (email);
 
 create table if not exists shura_members (id text primary key, payload jsonb not null);
 create table if not exists shura_visits (id text primary key, payload jsonb not null);
