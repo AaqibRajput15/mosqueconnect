@@ -1,51 +1,50 @@
 import { NextResponse } from 'next/server'
-import { appDataStore } from '@/lib/server-data'
-import type { User } from '@/lib/types'
-import { createSession } from '@/lib/auth/session-store'
-import { getAuthRateLimitKey, getLockoutRetryAfterSeconds, isLockedOut, registerAuthFailure, registerAuthSuccess } from '@/lib/auth/rate-limit'
-import { setAuthCookie } from '@/lib/auth/cookies'
-import { validateCsrfToken } from '@/lib/auth/csrf'
+import { z } from 'zod'
+import { AUTH_COOKIE } from '@/lib/auth/server'
+import { hashPassword } from '@/lib/auth/password'
+import { registerCredentialsAccount, SESSION_TTL_SECONDS } from '@/lib/auth/session-store'
+
+const signUpSchema = z.object({
+  email: z.string().trim().email(),
+  password: z.string().min(8).max(128),
+  name: z.string().trim().min(1).max(120).optional(),
+})
+
+const GENERIC_AUTH_ERROR = 'Invalid email or password'
 
 export async function POST(request: Request) {
-  if (!validateCsrfToken(request)) {
-    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+  let payload: unknown
+
+  try {
+    payload = await request.json()
+  } catch {
+    return NextResponse.json({ ok: false, error: GENERIC_AUTH_ERROR }, { status: 400 })
   }
 
-  const body = await request.json()
-  const email = String(body.email ?? '').trim().toLowerCase()
-  const name = String(body.name ?? '').trim() || email
-  const key = getAuthRateLimitKey(request, email)
-
-  if (isLockedOut(key)) {
-    return NextResponse.json(
-      { error: 'Too many failed attempts. Try again later.' },
-      { status: 429, headers: { 'Retry-After': String(getLockoutRetryAfterSeconds(key)) } },
-    )
+  const parsed = signUpSchema.safeParse(payload)
+  if (!parsed.success) {
+    return NextResponse.json({ ok: false, error: GENERIC_AUTH_ERROR }, { status: 400 })
   }
 
-  if (!email || appDataStore.users.some((u) => u.email.toLowerCase() === email)) {
-    registerAuthFailure(key)
-    return NextResponse.json({ error: 'Unable to create account' }, { status: 400 })
+  const passwordHash = await hashPassword(parsed.data.password)
+  const result = registerCredentialsAccount({
+    email: parsed.data.email,
+    name: parsed.data.name,
+    passwordHash,
+  })
+
+  if ('error' in result) {
+    return NextResponse.json({ ok: false, error: GENERIC_AUTH_ERROR }, { status: 401 })
   }
 
-  const user: User = {
-    id: `user-${Date.now()}`,
-    name,
-    email,
-    role: 'member',
-    mosqueId: undefined,
-    createdAt: new Date().toISOString(),
-  }
+  const response = NextResponse.json({ ok: true, user: result.user }, { status: 201 })
+  response.cookies.set(AUTH_COOKIE, result.session.token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_TTL_SECONDS,
+  })
 
-  appDataStore.users.push(user)
-  const session = createSession(email, 'credentials')
-  if (!session) {
-    registerAuthFailure(key)
-    return NextResponse.json({ error: 'Unable to create account' }, { status: 500 })
-  }
-
-  registerAuthSuccess(key)
-  const response = NextResponse.json({ ok: true, user }, { status: 201 })
-  setAuthCookie(response, session.token)
   return response
 }

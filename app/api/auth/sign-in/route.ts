@@ -1,34 +1,44 @@
 import { NextResponse } from 'next/server'
-import { type AuthProvider, createSession } from '@/lib/auth/session-store'
-import { getAuthRateLimitKey, getLockoutRetryAfterSeconds, isLockedOut, registerAuthFailure, registerAuthSuccess } from '@/lib/auth/rate-limit'
-import { setAuthCookie } from '@/lib/auth/cookies'
-import { validateCsrfToken } from '@/lib/auth/csrf'
+import { z } from 'zod'
+import { AUTH_COOKIE } from '@/lib/auth/server'
+import { authenticateWithCredentials, createSessionForUserId, SESSION_TTL_SECONDS } from '@/lib/auth/session-store'
+
+const signInSchema = z.object({
+  email: z.string().trim().email(),
+  password: z.string().min(8).max(128),
+})
+
+const GENERIC_AUTH_ERROR = 'Invalid email or password'
 
 export async function POST(request: Request) {
-  if (!validateCsrfToken(request)) {
-    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+  let payload: unknown
+
+  try {
+    payload = await request.json()
+  } catch {
+    return NextResponse.json({ ok: false, error: GENERIC_AUTH_ERROR }, { status: 400 })
   }
 
-  const body = await request.json()
-  const email = String(body.email ?? '').trim()
-  const provider = (body.provider ?? 'credentials') as AuthProvider
-  const key = getAuthRateLimitKey(request, email)
-
-  if (isLockedOut(key)) {
-    return NextResponse.json(
-      { error: 'Too many failed attempts. Try again later.' },
-      { status: 429, headers: { 'Retry-After': String(getLockoutRetryAfterSeconds(key)) } },
-    )
+  const parsed = signInSchema.safeParse(payload)
+  if (!parsed.success) {
+    return NextResponse.json({ ok: false, error: GENERIC_AUTH_ERROR }, { status: 400 })
   }
 
-  const session = createSession(email, provider)
-  if (!session) {
-    registerAuthFailure(key)
-    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+  const user = await authenticateWithCredentials(parsed.data.email, parsed.data.password)
+  if (!user) {
+    return NextResponse.json({ ok: false, error: GENERIC_AUTH_ERROR }, { status: 401 })
   }
 
-  registerAuthSuccess(key)
-  const response = NextResponse.json({ ok: true })
-  setAuthCookie(response, session.token)
+  const session = createSessionForUserId(user.id, 'credentials')
+
+  const response = NextResponse.json({ ok: true, user })
+  response.cookies.set(AUTH_COOKIE, session.token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_TTL_SECONDS,
+  })
+
   return response
 }
