@@ -77,7 +77,7 @@ export const userSchema = z.object({
   id: z.string().optional(),
   email: z.string().email(),
   name: z.string(),
-  role: z.enum(['admin', 'mosque_admin', 'member', 'visitor']),
+  role: z.enum(['admin', 'shura', 'mosque_admin', 'member', 'visitor']),
   mosqueId: z.string().optional(),
   avatarUrl: z.string().optional(),
   phone: z.string().optional(),
