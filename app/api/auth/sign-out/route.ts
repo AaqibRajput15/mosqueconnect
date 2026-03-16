@@ -10,9 +10,18 @@ export async function POST(request: Request) {
     .find((part) => part.startsWith(`${AUTH_COOKIE}=`))
     ?.split('=')[1]
 
-  if (token) revokeSession(token)
+  if (token) {
+    revokeSession(token)
+  }
 
-  const response = NextResponse.json({ ok: true })
-  response.cookies.set(AUTH_COOKIE, '', { httpOnly: true, maxAge: 0, path: '/' })
+  const response = NextResponse.json({ ok: true, user: null })
+  response.cookies.set(AUTH_COOKIE, '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 0,
+  })
+
   return response
 }
