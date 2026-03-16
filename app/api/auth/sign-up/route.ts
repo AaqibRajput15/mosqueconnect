@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { signInWithCredentials } from '@/lib/auth/session-store'
+import { registerWithCredentials } from '@/lib/auth/session-store'
 import { AUTH_COOKIE } from '@/lib/auth/server'
 
 export async function POST(request: Request) {
@@ -7,10 +7,10 @@ export async function POST(request: Request) {
   const email = String(body.email ?? '')
   const password = String(body.password ?? '')
 
-  const { session, errorCode } = signInWithCredentials(email, password)
+  const { session, errorCode } = registerWithCredentials(email, password)
 
   if (!session) {
-    return NextResponse.json({ errorCode: errorCode ?? 'invalid_credentials' }, { status: 401 })
+    return NextResponse.json({ errorCode: errorCode ?? 'account_exists' }, { status: 409 })
   }
 
   const response = NextResponse.json({ ok: true })
