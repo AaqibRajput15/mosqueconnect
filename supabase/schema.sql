@@ -108,29 +108,22 @@ create table if not exists shura_registrations (id text primary key, payload jso
 create table if not exists shura_assessments (id text primary key, payload jsonb not null);
 create table if not exists shura_imam_appointments (id text primary key, payload jsonb not null);
 
--- Migration path for production databases with existing users rows.
-alter table users add column if not exists "isActive" boolean default true;
-alter table users add column if not exists "onboardingCompleted" boolean default false;
-alter table users add column if not exists "defaultRedirectPath" text;
+-- Durable authentication session storage
+create extension if not exists pgcrypto;
 
-update users
-set
-  "isActive" = coalesce("isActive", true),
-  "onboardingCompleted" = coalesce("onboardingCompleted", false)
-where "isActive" is null or "onboardingCompleted" is null;
-
-alter table users alter column "isActive" set default true;
-alter table users alter column "isActive" set not null;
-alter table users alter column "onboardingCompleted" set default false;
-alter table users alter column "onboardingCompleted" set not null;
-
--- Backfill one identity per existing app user row, matching legacy in-memory assumptions.
-insert into auth_identities ("userId", provider, "providerUserId", email, "emailVerified", "lastLoginAt")
-select u.id, 'legacy', u.id, u.email, true, now()
-from users u
-where not exists (
-  select 1
-  from auth_identities ai
-  where ai.provider = 'legacy' and ai."providerUserId" = u.id
+create table if not exists auth_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null references users(id) on delete cascade,
+  provider text not null,
+  session_token_hash text not null unique,
+  ip_address inet,
+  user_agent text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null,
+  revoked_at timestamptz
 );
 
+create index if not exists auth_sessions_user_id_idx on auth_sessions (user_id);
+create index if not exists auth_sessions_expires_at_idx on auth_sessions (expires_at);
+create index if not exists auth_sessions_revoked_at_idx on auth_sessions (revoked_at);
