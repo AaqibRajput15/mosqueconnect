@@ -1,11 +1,4 @@
 import { NextResponse } from 'next/server'
-<<<<<<< HEAD
-import { AUTH_COOKIE } from '@/lib/auth/server'
-
-export async function POST() {
-  const response = NextResponse.json({ ok: true })
-  response.cookies.set(AUTH_COOKIE, '', { httpOnly: true, maxAge: 0, path: '/' })
-=======
 import { clearAuthCookie } from '@/lib/auth/cookies'
 import { parseCookies, validateCsrfToken } from '@/lib/auth/csrf'
 import { AUTH_COOKIE } from '@/lib/auth/server'
@@ -30,6 +23,5 @@ export async function POST(request: Request) {
     maxAge: 0,
   })
 
->>>>>>> main
   return response
 }
