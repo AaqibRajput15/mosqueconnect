@@ -18,6 +18,13 @@ const SESSION_TTL_MS = 1000 * 60 * 60 * 8
 export function createSession(email: string, provider: AuthProvider): SessionRecord | null {
   const user = appDataStore.users.find((u) => u.email.toLowerCase() === email.toLowerCase())
   if (!user) return null
+  return createSessionForUserId(user.id, provider)
+}
+
+
+export function createSessionForUserId(userId: string, provider: AuthProvider): SessionRecord | null {
+  const user = appDataStore.users.find((candidate) => candidate.id === userId)
+  if (!user) return null
 
   const token = randomUUID()
   const now = Date.now()

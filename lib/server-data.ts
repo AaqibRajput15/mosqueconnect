@@ -1,6 +1,6 @@
 import { announcements, donationGoals, donations, events, expenses, imams, managementMembers, mockAnnouncements, mockEvents, mockFinanceRecords, mockMosques, mockPrayerTimes } from './mock-data'
 import { imamAppointments, mosqueAssessments, mosqueRegistrations, mosqueVisits, shuraMeetings, shuraMembers } from './shura-mock-data'
-import type { Announcement, Event, FinanceRecord, Mosque, MosqueAssessment, MosqueRegistration, MosqueVisit, ShuraMeeting, ShuraMember, User, ImamAppointment } from './types'
+import type { Announcement, AuthIdentity, Event, FinanceRecord, Mosque, MosqueAssessment, MosqueRegistration, MosqueVisit, ShuraMeeting, ShuraMember, User, ImamAppointment } from './types'
 
 export interface AppDataStore {
   mosques: Mosque[]
@@ -8,6 +8,7 @@ export interface AppDataStore {
   announcements: Announcement[]
   financeRecords: FinanceRecord[]
   users: User[]
+  authIdentities: AuthIdentity[]
   shura: {
     members: ShuraMember[]
     visits: MosqueVisit[]
@@ -30,6 +31,26 @@ export const appDataStore: AppDataStore = {
     { id: 'user-2', email: 'imam@alnoor.org', name: 'Imam Abdullah', role: 'mosque_admin', mosqueId: '1', createdAt: now },
     { id: 'user-3', email: 'member@example.org', name: 'Community Member', role: 'member', mosqueId: '2', createdAt: now },
     { id: 'user-4', email: 'shura@mosqueconnect.org', name: 'Shura Council Lead', role: 'shura', createdAt: now },
+  ],
+  authIdentities: [
+    {
+      id: 'identity-google-admin',
+      provider: 'google',
+      providerSubject: 'seed-google-admin',
+      userId: 'user-1',
+      email: 'admin@mosqueconnect.org',
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: 'identity-microsoft-imam',
+      provider: 'microsoft',
+      providerSubject: 'seed-microsoft-imam',
+      userId: 'user-2',
+      email: 'imam@alnoor.org',
+      createdAt: now,
+      updatedAt: now,
+    },
   ],
   shura: {
     members: [...shuraMembers],

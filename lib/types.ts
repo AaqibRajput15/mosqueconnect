@@ -152,6 +152,16 @@ export interface User {
   createdAt: string
 }
 
+export interface AuthIdentity {
+  id: string
+  provider: 'google' | 'microsoft'
+  providerSubject: string
+  userId: string
+  email: string
+  createdAt: string
+  updatedAt: string
+}
+
 export type UserRole = 'admin' | 'shura' | 'mosque_admin' | 'member' | 'visitor'
 
 // Imam Profile

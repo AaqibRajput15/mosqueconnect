@@ -15,6 +15,12 @@ export default function SignInPage() {
 
   const signIn = async () => {
     setError('')
+
+    if (provider === 'google' || provider === 'microsoft') {
+      window.location.href = `/api/auth/oauth/${provider}/start`
+      return
+    }
+
     const response = await fetch('/api/auth/sign-in', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

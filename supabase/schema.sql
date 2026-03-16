@@ -83,6 +83,18 @@ create table if not exists users (
   "createdAt" timestamptz not null default now()
 );
 
+
+create table if not exists auth_identities (
+  id text primary key,
+  provider text not null,
+  "providerSubject" text not null,
+  "userId" text not null,
+  email text not null,
+  "createdAt" timestamptz not null default now(),
+  "updatedAt" timestamptz not null default now(),
+  unique(provider, "providerSubject")
+);
+
 create table if not exists shura_members (id text primary key, payload jsonb not null);
 create table if not exists shura_visits (id text primary key, payload jsonb not null);
 create table if not exists shura_meetings (id text primary key, payload jsonb not null);
