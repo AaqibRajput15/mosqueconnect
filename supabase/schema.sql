@@ -78,10 +78,28 @@ create table if not exists users (
   name text not null,
   role text not null,
   "mosqueId" text,
+  "isActive" boolean not null default true,
+  "onboardingCompleted" boolean not null default false,
+  "defaultRedirectPath" text,
   "avatarUrl" text,
   phone text,
   "createdAt" timestamptz not null default now()
 );
+
+create table if not exists auth_identities (
+  id bigserial primary key,
+  "userId" text not null references users(id) on delete cascade,
+  provider text not null,
+  "providerUserId" text not null,
+  email text,
+  "emailVerified" boolean not null default false,
+  "lastLoginAt" timestamptz,
+  "createdAt" timestamptz not null default now(),
+  unique (provider, "providerUserId")
+);
+
+create index if not exists auth_identities_user_id_idx on auth_identities ("userId");
+create index if not exists auth_identities_email_idx on auth_identities (email);
 
 create table if not exists shura_members (id text primary key, payload jsonb not null);
 create table if not exists shura_visits (id text primary key, payload jsonb not null);
@@ -89,3 +107,30 @@ create table if not exists shura_meetings (id text primary key, payload jsonb no
 create table if not exists shura_registrations (id text primary key, payload jsonb not null);
 create table if not exists shura_assessments (id text primary key, payload jsonb not null);
 create table if not exists shura_imam_appointments (id text primary key, payload jsonb not null);
+
+-- Migration path for production databases with existing users rows.
+alter table users add column if not exists "isActive" boolean default true;
+alter table users add column if not exists "onboardingCompleted" boolean default false;
+alter table users add column if not exists "defaultRedirectPath" text;
+
+update users
+set
+  "isActive" = coalesce("isActive", true),
+  "onboardingCompleted" = coalesce("onboardingCompleted", false)
+where "isActive" is null or "onboardingCompleted" is null;
+
+alter table users alter column "isActive" set default true;
+alter table users alter column "isActive" set not null;
+alter table users alter column "onboardingCompleted" set default false;
+alter table users alter column "onboardingCompleted" set not null;
+
+-- Backfill one identity per existing app user row, matching legacy in-memory assumptions.
+insert into auth_identities ("userId", provider, "providerUserId", email, "emailVerified", "lastLoginAt")
+select u.id, 'legacy', u.id, u.email, true, now()
+from users u
+where not exists (
+  select 1
+  from auth_identities ai
+  where ai.provider = 'legacy' and ai."providerUserId" = u.id
+);
+

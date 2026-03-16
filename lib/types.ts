@@ -147,6 +147,9 @@ export interface User {
   name: string
   role: UserRole
   mosqueId?: string
+  isActive?: boolean
+  onboardingCompleted?: boolean
+  defaultRedirectPath?: string
   avatarUrl?: string
   phone?: string
   createdAt: string
