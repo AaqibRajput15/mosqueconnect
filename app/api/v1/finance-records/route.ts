@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
 import { createFinanceRecordSchema } from './schema'
 import { financeRecordRepository } from '@/lib/backend/repositories'
+<<<<<<< HEAD
+import { requireApiPermission } from '@/lib/auth/server'
+
+export async function GET(request: Request) {
+  const auth = await requireApiPermission(request, 'finance:read')
+=======
 import { authorizeApiRequest } from '@/lib/auth/server'
 
 export async function GET(request: Request) {
   const auth = await authorizeApiRequest(request, { resource: 'finance', action: 'read' })
+>>>>>>> main
   if ('error' in auth) return auth.error
   const rows = await financeRecordRepository.list()
   const visibleRows = auth.context.role === 'admin'
@@ -14,6 +21,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireApiPermission(request, 'finance:write')
+  if ('error' in auth) return auth.error
   const body = await request.json()
   const normalized = body.recordType && !body.type ? { ...body, type: body.recordType } : body
   const payload = createFinanceRecordSchema.omit({ id: true, createdAt: true }).parse(normalized)

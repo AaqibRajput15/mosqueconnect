@@ -156,6 +156,8 @@ export interface User {
   createdAt: string
 }
 
+<<<<<<< HEAD
+=======
 export interface AuthIdentity {
   id: string
   provider: 'google' | 'microsoft'
@@ -166,6 +168,7 @@ export interface AuthIdentity {
   updatedAt: string
 }
 
+>>>>>>> main
 export type UserRole = 'admin' | 'shura' | 'mosque_admin' | 'member' | 'visitor'
 
 // Imam Profile

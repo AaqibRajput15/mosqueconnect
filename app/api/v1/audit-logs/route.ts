@@ -1,4 +1,13 @@
 import { NextResponse } from 'next/server'
+<<<<<<< HEAD
+import { requireApiPermission } from '@/lib/auth/server'
+import { listAuditLogs } from '@/lib/auth/audit-log'
+
+export async function GET(request: Request) {
+  const auth = await requireApiPermission(request, 'audit:read')
+  if ('error' in auth) return auth.error
+  return NextResponse.json({ data: listAuditLogs() })
+=======
 import { authorizeApiRequest } from '@/lib/auth/server'
 import { listAuditLogs } from '@/lib/auth/audit-log'
 
@@ -45,4 +54,5 @@ export async function GET(request: Request) {
   })
 
   return NextResponse.json(result)
+>>>>>>> main
 }

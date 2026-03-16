@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
 import { createUserSchema } from '../schema'
 import { userRepository } from '@/lib/backend/repositories'
+<<<<<<< HEAD
+import { requireApiPermission } from '@/lib/auth/server'
+
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireApiPermission(request, 'users:read')
+=======
 import { authorizeApiRequest } from '@/lib/auth/server'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await authorizeApiRequest(request, { resource: 'users', action: 'read' })
+>>>>>>> main
   if ('error' in auth) return auth.error
   const { id } = await params
   const item = await userRepository.getById(id)
@@ -14,7 +21,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+<<<<<<< HEAD
+  const auth = await requireApiPermission(request, 'users:write')
+=======
   const auth = await authorizeApiRequest(request, { resource: 'users', action: 'update' })
+>>>>>>> main
   if ('error' in auth) return auth.error
   const { id } = await params
   const body = await request.json()
@@ -33,7 +44,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+<<<<<<< HEAD
+  const auth = await requireApiPermission(request, 'users:write')
+=======
   const auth = await authorizeApiRequest(request, { resource: 'users', action: 'delete' })
+>>>>>>> main
   if ('error' in auth) return auth.error
   const { id } = await params
   const removed = await userRepository.remove(id)

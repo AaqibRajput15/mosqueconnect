@@ -1,5 +1,27 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+<<<<<<< HEAD
+import type { UserRole } from '@/lib/types'
+import { getUserForSession } from './session-store'
+import { canAccessRoute, hasPermission, type Permission } from './permissions'
+import { logAudit } from './audit-log'
+
+export const AUTH_COOKIE = 'mc_session'
+
+export async function getSessionUser() {
+  const token = (await cookies()).get(AUTH_COOKIE)?.value
+  return getUserForSession(token)
+}
+
+export async function requireRouteAccess(route: '/admin' | '/shura') {
+  const user = await getSessionUser()
+  if (!user) {
+    return { redirect: NextResponse.redirect(new URL('/unauthorized', process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000')) }
+  }
+
+  if (!canAccessRoute(user.role, route)) {
+    return { redirect: NextResponse.redirect(new URL('/forbidden', process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000')) }
+=======
 import type { User } from '@/lib/types'
 import { getUserForSession } from './session-store'
 import {
@@ -60,11 +82,14 @@ export async function guardRouteAccess(pathname: string) {
 
   if (!canAccessRoute(user.role, protectedRoute)) {
     return { redirectPath: '/forbidden' }
+>>>>>>> main
   }
 
   return { user }
 }
 
+<<<<<<< HEAD
+=======
 export async function requireRouteAccess(pathname: string) {
   const guardResult = await guardRouteAccess(pathname)
   if (guardResult.redirectPath) {
@@ -74,6 +99,7 @@ export async function requireRouteAccess(pathname: string) {
   return { user: guardResult.user ?? null }
 }
 
+>>>>>>> main
 export async function requireApiPermission(request: Request, permission: Permission) {
   const cookieHeader = request.headers.get('cookie') ?? ''
   const token = cookieHeader
@@ -83,6 +109,21 @@ export async function requireApiPermission(request: Request, permission: Permiss
     ?.split('=')[1]
 
   const user = getUserForSession(token)
+<<<<<<< HEAD
+
+  if (!user) {
+    logAudit({ action: `api:${permission}`, path: request.url, status: 'denied', metadata: { reason: 'unauthenticated' } })
+    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
+  }
+
+  if (!hasPermission(user.role as UserRole, permission)) {
+    logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'denied', metadata: { reason: 'forbidden' } })
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+  }
+
+  logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'allowed' })
+  return { user }
+=======
   const context = buildAuditContext(request)
 
   if (!user) {
@@ -115,4 +156,5 @@ export async function requireApiPermission(request: Request, permission: Permiss
 
   logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'allowed' })
   return { user, rotatedToken: resolved.rotatedToken }
+>>>>>>> main
 }
