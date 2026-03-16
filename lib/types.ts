@@ -149,6 +149,7 @@ export interface User {
   mosqueId?: string
   avatarUrl?: string
   phone?: string
+  emailVerified?: boolean
   createdAt: string
 }
 

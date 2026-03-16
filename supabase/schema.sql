@@ -80,6 +80,7 @@ create table if not exists users (
   "mosqueId" text,
   "avatarUrl" text,
   phone text,
+  "emailVerified" boolean not null default false,
   "createdAt" timestamptz not null default now()
 );
 
@@ -89,3 +90,16 @@ create table if not exists shura_meetings (id text primary key, payload jsonb no
 create table if not exists shura_registrations (id text primary key, payload jsonb not null);
 create table if not exists shura_assessments (id text primary key, payload jsonb not null);
 create table if not exists shura_imam_appointments (id text primary key, payload jsonb not null);
+
+
+create table if not exists auth_one_time_tokens (
+  id text primary key,
+  "userId" text not null,
+  purpose text not null,
+  "tokenHash" text not null,
+  "expiresAt" timestamptz not null,
+  "usedAt" timestamptz,
+  "createdAt" timestamptz not null default now()
+);
+
+create index if not exists auth_one_time_tokens_lookup_idx on auth_one_time_tokens (purpose, "tokenHash");

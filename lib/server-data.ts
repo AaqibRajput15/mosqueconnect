@@ -26,10 +26,10 @@ export const appDataStore: AppDataStore = {
   announcements: [...mockAnnouncements],
   financeRecords: [...mockFinanceRecords],
   users: [
-    { id: 'user-1', email: 'admin@mosqueconnect.org', name: 'System Admin', role: 'admin', createdAt: now },
-    { id: 'user-2', email: 'imam@alnoor.org', name: 'Imam Abdullah', role: 'mosque_admin', mosqueId: '1', createdAt: now },
-    { id: 'user-3', email: 'member@example.org', name: 'Community Member', role: 'member', mosqueId: '2', createdAt: now },
-    { id: 'user-4', email: 'shura@mosqueconnect.org', name: 'Shura Council Lead', role: 'shura', createdAt: now },
+    { id: 'user-1', email: 'admin@mosqueconnect.org', name: 'System Admin', role: 'admin', emailVerified: true, createdAt: now },
+    { id: 'user-2', email: 'imam@alnoor.org', name: 'Imam Abdullah', role: 'mosque_admin', mosqueId: '1', emailVerified: false, createdAt: now },
+    { id: 'user-3', email: 'member@example.org', name: 'Community Member', role: 'member', emailVerified: false, mosqueId: '2', createdAt: now },
+    { id: 'user-4', email: 'shura@mosqueconnect.org', name: 'Shura Council Lead', role: 'shura', emailVerified: true, createdAt: now },
   ],
   shura: {
     members: [...shuraMembers],

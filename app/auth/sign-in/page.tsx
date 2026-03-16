@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -48,6 +49,10 @@ export default function SignInPage() {
             <Button variant={provider === 'microsoft' ? 'default' : 'outline'} onClick={() => setProvider('microsoft')}>Microsoft</Button>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex justify-between text-xs">
+            <Link className="text-primary hover:underline" href="/auth/forgot-password">Forgot password?</Link>
+            <Link className="text-primary hover:underline" href="/auth/verify-email">Verify email</Link>
+          </div>
           <Button className="w-full" onClick={signIn}>Continue</Button>
           <p className="text-xs text-muted-foreground">Try: admin@mosqueconnect.org, imam@alnoor.org, member@example.org</p>
         </CardContent>

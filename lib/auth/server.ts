@@ -4,6 +4,7 @@ import type { UserRole } from '@/lib/types'
 import { getUserForSession } from './session-store'
 import { canAccessRoute, hasPermission, type Permission } from './permissions'
 import { logAudit } from './audit-log'
+import { canAccessPrivilegedRoute } from './email-verification-policy'
 
 export const AUTH_COOKIE = 'mc_session'
 
@@ -43,6 +44,11 @@ export async function requireApiPermission(request: Request, permission: Permiss
   if (!hasPermission(user.role as UserRole, permission)) {
     logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'denied', metadata: { reason: 'forbidden' } })
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+  }
+
+  if (!canAccessPrivilegedRoute(user)) {
+    logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'denied', metadata: { reason: 'email_unverified' } })
+    return { error: NextResponse.json({ error: 'Email verification required' }, { status: 403 }) }
   }
 
   logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'allowed' })
