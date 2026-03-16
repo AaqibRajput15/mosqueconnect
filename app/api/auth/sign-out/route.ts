@@ -1,18 +1,27 @@
 import { NextResponse } from 'next/server'
+import { clearAuthCookie } from '@/lib/auth/cookies'
+import { parseCookies, validateCsrfToken } from '@/lib/auth/csrf'
 import { AUTH_COOKIE } from '@/lib/auth/server'
-import { revokeSession } from '@/lib/auth/session-store'
+import { getUserForSession, revokeSession } from '@/lib/auth/session-store'
+import { buildAuditContext, logAudit } from '@/lib/auth/audit-log'
 
 export async function POST(request: Request) {
-  const cookieHeader = request.headers.get('cookie') ?? ''
-  const token = cookieHeader
-    .split(';')
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${AUTH_COOKIE}=`))
-    ?.split('=')[1]
+  if (!validateCsrfToken(request)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 })
+  }
 
-  if (token) revokeSession(token)
+  if (token) {
+    revokeSession(token)
+  }
 
-  const response = NextResponse.json({ ok: true })
-  response.cookies.set(AUTH_COOKIE, '', { httpOnly: true, maxAge: 0, path: '/' })
+  const response = NextResponse.json({ ok: true, user: null })
+  response.cookies.set(AUTH_COOKIE, '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 0,
+  })
+
   return response
 }

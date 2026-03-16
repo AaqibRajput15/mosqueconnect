@@ -33,6 +33,29 @@ This creates tables used by:
 - `/api/v1/users`
 - `/api/v1/shura/workflows`
 
+
+### OAuth configuration (Google + Microsoft)
+
+Provider sign-in buttons on `/auth/sign-in` use OAuth Authorization Code + PKCE and require provider secrets.
+
+Required for Google OAuth:
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+
+Required for Microsoft OAuth:
+- `MICROSOFT_CLIENT_ID`
+- `MICROSOFT_CLIENT_SECRET`
+- `MICROSOFT_TENANT_ID`
+
+Callback base URL used to build redirect URIs:
+- `OAUTH_CALLBACK_BASE_URL` (example: `http://localhost:3000`)
+
+If `OAUTH_CALLBACK_BASE_URL` is not set, the app falls back to `NEXT_PUBLIC_APP_URL` and then `http://localhost:3000`.
+
+Register these callback URLs with providers:
+- Google: `/api/auth/oauth/google/callback`
+- Microsoft: `/api/auth/oauth/microsoft/callback`
+
 ### 3) Run locally
 
 ```bash
