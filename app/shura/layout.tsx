@@ -1,12 +1,14 @@
 import { redirect } from 'next/navigation'
-import { guardRouteAccess } from '@/lib/auth/server'
+import { getSessionUser } from '@/lib/auth/server'
+import { canAccessRoute } from '@/lib/auth/permissions'
+import { canAccessPrivilegedRoute } from '@/lib/auth/email-verification-policy'
 import { ShuraShell } from '@/components/shura/shura-shell'
 
 export default async function ShuraLayout({ children }: { children: React.ReactNode }) {
-  const { redirectPath } = await guardRouteAccess('/shura')
-  if (redirectPath) {
-    redirect(redirectPath)
-  }
+  const user = await getSessionUser()
+  if (!user) redirect('/unauthorized')
+  if (!canAccessRoute(user.role, '/shura')) redirect('/forbidden')
+  if (!canAccessPrivilegedRoute(user)) redirect('/forbidden')
 
   return <ShuraShell>{children}</ShuraShell>
 }
