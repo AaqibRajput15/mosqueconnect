@@ -18,9 +18,21 @@ export default function SignInPage() {
   const router = useRouter()
 
   const signIn = async () => {
-    const formError = validateSignInForm(email, password)
-    if (formError) {
-      setErrorCode(formError)
+    setError('')
+
+    if (provider === 'google' || provider === 'microsoft') {
+      window.location.href = `/api/auth/oauth/${provider}/start`
+      return
+    }
+
+    const response = await fetch('/api/auth/sign-in', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, provider }),
+    })
+
+    if (!response.ok) {
+      setError('Unable to sign in with the selected provider/account.')
       return
     }
 
