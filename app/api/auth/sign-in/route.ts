@@ -1,45 +1,43 @@
 import { NextResponse } from 'next/server'
-import { createSession, type AuthProvider } from '@/lib/auth/session-store'
+import { z } from 'zod'
 import { AUTH_COOKIE } from '@/lib/auth/server'
-import { buildAuditContext, logAudit } from '@/lib/auth/audit-log'
+import { authenticateWithCredentials, createSessionForUserId, SESSION_TTL_SECONDS } from '@/lib/auth/session-store'
+
+const signInSchema = z.object({
+  email: z.string().trim().email(),
+  password: z.string().min(8).max(128),
+})
+
+const GENERIC_AUTH_ERROR = 'Invalid email or password'
 
 export async function POST(request: Request) {
-  const body = await request.json()
-  const email = String(body.email ?? '')
-  const provider = (body.provider ?? 'credentials') as AuthProvider
-  const context = buildAuditContext(request)
+  let payload: unknown
 
-  const session = createSession(email, provider)
-  if (!session) {
-    void logAudit({
-      eventType: 'auth.failed_login',
-      targetResource: context.targetResource,
-      requestId: context.requestId,
-      ipAddress: context.ipAddress,
-      userAgent: context.userAgent,
-      outcome: 'failure',
-      metadata: { email, provider },
-    })
-    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+  try {
+    payload = await request.json()
+  } catch {
+    return NextResponse.json({ ok: false, error: GENERIC_AUTH_ERROR }, { status: 400 })
   }
 
-  void logAudit({
-    eventType: 'auth.sign_in',
-    actorId: session.userId,
-    targetResource: context.targetResource,
-    requestId: context.requestId,
-    ipAddress: context.ipAddress,
-    userAgent: context.userAgent,
-    outcome: 'success',
-    metadata: { provider },
-  })
+  const parsed = signInSchema.safeParse(payload)
+  if (!parsed.success) {
+    return NextResponse.json({ ok: false, error: GENERIC_AUTH_ERROR }, { status: 400 })
+  }
 
-  const response = NextResponse.json({ ok: true })
+  const user = await authenticateWithCredentials(parsed.data.email, parsed.data.password)
+  if (!user) {
+    return NextResponse.json({ ok: false, error: GENERIC_AUTH_ERROR }, { status: 401 })
+  }
+
+  const session = createSessionForUserId(user.id, 'credentials')
+
+  const response = NextResponse.json({ ok: true, user })
   response.cookies.set(AUTH_COOKIE, session.token, {
     httpOnly: true,
+    secure: true,
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 8,
+    maxAge: SESSION_TTL_SECONDS,
   })
 
   return response

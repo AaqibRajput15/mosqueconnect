@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { listAuditLogs, logAudit, buildAuditContext, type AuditEventType, type AuditOutcome } from '@/lib/auth/audit-log'
-import { requireApiPermission } from '@/lib/auth/server'
+import { authorizeApiRequest } from '@/lib/auth/server'
+import { listAuditLogs } from '@/lib/auth/audit-log'
 
 export async function GET(request: Request) {
-  const auth = await requireApiPermission(request, 'audit:read')
+  const auth = await authorizeApiRequest(request, { resource: 'audit', action: 'read' })
   if ('error' in auth) return auth.error
 
   if (auth.user.role !== 'admin') {

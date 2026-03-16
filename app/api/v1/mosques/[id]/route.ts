@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createMosqueSchema } from '../schema'
 import { mosqueRepository } from '@/lib/backend/repositories'
-import { requireApiPermission } from '@/lib/auth/server'
+import { authorizeApiRequest } from '@/lib/auth/server'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireApiPermission(request, 'mosques:read')
+  const auth = await authorizeApiRequest(request, { resource: 'mosques', action: 'read' })
   if ('error' in auth) return auth.error
   const { id } = await params
   const mosque = await mosqueRepository.getById(id)
@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireApiPermission(request, 'mosques:write')
+  const auth = await authorizeApiRequest(request, { resource: 'mosques', action: 'update' })
   if ('error' in auth) return auth.error
   const { id } = await params
   const body = await request.json()
@@ -24,7 +24,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireApiPermission(request, 'mosques:write')
+  const auth = await authorizeApiRequest(request, { resource: 'mosques', action: 'delete' })
   if ('error' in auth) return auth.error
   const { id } = await params
   const removed = await mosqueRepository.remove(id)

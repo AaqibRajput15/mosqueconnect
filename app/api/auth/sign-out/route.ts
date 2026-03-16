@@ -11,23 +11,18 @@ export async function POST(request: Request) {
     .find((part) => part.startsWith(`${AUTH_COOKIE}=`))
     ?.split('=')[1]
 
-  const context = buildAuditContext(request)
-  const actor = getUserForSession(token)
+  if (token) {
+    revokeSession(token)
+  }
 
-  if (token) revokeSession(token)
-
-  void logAudit({
-    eventType: 'auth.sign_out',
-    actorId: actor?.id,
-    actorRole: actor?.role,
-    targetResource: context.targetResource,
-    requestId: context.requestId,
-    ipAddress: context.ipAddress,
-    userAgent: context.userAgent,
-    outcome: 'success',
+  const response = NextResponse.json({ ok: true, user: null })
+  response.cookies.set(AUTH_COOKIE, '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 0,
   })
 
-  const response = NextResponse.json({ ok: true })
-  response.cookies.set(AUTH_COOKIE, '', { httpOnly: true, maxAge: 0, path: '/' })
   return response
 }

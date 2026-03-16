@@ -147,9 +147,23 @@ export interface User {
   name: string
   role: UserRole
   mosqueId?: string
+  isActive?: boolean
+  onboardingCompleted?: boolean
+  defaultRedirectPath?: string
   avatarUrl?: string
   phone?: string
+  emailVerified?: boolean
   createdAt: string
+}
+
+export interface AuthIdentity {
+  id: string
+  provider: 'google' | 'microsoft'
+  providerSubject: string
+  userId: string
+  email: string
+  createdAt: string
+  updatedAt: string
 }
 
 export type UserRole = 'admin' | 'shura' | 'mosque_admin' | 'member' | 'visitor'
