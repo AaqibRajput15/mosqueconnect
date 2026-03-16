@@ -37,7 +37,7 @@ export function getDefaultDashboard(role: UserRole) {
 
 export async function getSessionUser() {
   const token = (await cookies()).get(AUTH_COOKIE)?.value
-  return getUserForSession(token)
+  return resolveUserSession(token).user
 }
 
 export async function guardRouteAccess(pathname: string) {
@@ -114,5 +114,5 @@ export async function requireApiPermission(request: Request, permission: Permiss
   }
 
   logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'allowed' })
-  return { user }
+  return { user, rotatedToken: resolved.rotatedToken }
 }
