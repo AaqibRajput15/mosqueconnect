@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Pencil, Trash2, Megaphone, Pin } from "lucide-react"
-import { announcements as mockAnnouncementData, mosques } from "@/lib/mock-data"
+import { announcements as mockAnnouncementData, mosques } from "@/lib/services"
 import type { Announcement } from "@/lib/types"
 
 const announcements = mockAnnouncementData

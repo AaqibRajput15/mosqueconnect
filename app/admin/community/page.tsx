@@ -37,7 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Plus, Users, UserPlus, MoreHorizontal, Mail, Shield, Search } from "lucide-react"
-import { mosques } from "@/lib/mock-data"
+import { mosques } from "@/lib/services"
 import type { User, UserRole } from "@/lib/types"
 import { toast } from "sonner"
 import { format } from "date-fns"

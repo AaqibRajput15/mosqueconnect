@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Pencil, Trash2, MapPin, Users } from "lucide-react"
-import { mosques as mockMosqueData } from "@/lib/mock-data"
+import { mosques as mockMosqueData } from "@/lib/services"
 import type { Mosque } from "@/lib/types"
 
 const mosques = mockMosqueData

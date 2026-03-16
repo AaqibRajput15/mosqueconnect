@@ -32,7 +32,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { Plus, DollarSign, TrendingUp, TrendingDown, Target } from "lucide-react"
-import { donations, expenses, donationGoals, mosques } from "@/lib/mock-data"
+import { donations, expenses, donationGoals, mosques } from "@/lib/services"
 import type { FinanceRecord, DonationGoal } from "@/lib/types"
 import { toast } from "sonner"
 import { format } from "date-fns"

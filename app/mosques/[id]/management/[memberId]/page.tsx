@@ -2,7 +2,7 @@
 
 import { use } from 'react'
 import { notFound } from 'next/navigation'
-import { getMosqueById, getManagementMemberById } from '@/lib/mock-data'
+import { getMosqueById, getManagementMemberById } from '@/lib/services'
 import { ManagementMemberDetailView } from '@/components/mosques/management-member-detail-view'
 
 interface PageProps {

@@ -32,7 +32,7 @@ import {
   getUpcomingMeetings,
   getPendingRegistrations
 } from "@/lib/shura-mock-data"
-import { mockMosques } from "@/lib/mock-data"
+import { mockMosques } from "@/lib/services"
 
 export default function ShuraDashboardPage() {
   const totalMosques = mockMosques.length

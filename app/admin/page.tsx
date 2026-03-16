@@ -16,7 +16,7 @@ import {
   Plus,
 } from "lucide-react"
 import Link from "next/link"
-import { mockMosques, mockEvents, mockFinanceRecords, mockAnnouncements } from "@/lib/mock-data"
+import { mockMosques, mockEvents, mockFinanceRecords, mockAnnouncements } from "@/lib/services"
 
 export default function AdminDashboardPage() {
   const totalMosques = mockMosques.length

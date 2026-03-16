@@ -39,7 +39,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
-import { mockMosques, getNearbyMosques } from '@/lib/mock-data'
+import { mockMosques, getNearbyMosques } from '@/lib/services'
 import type { Mosque } from '@/lib/types'
 
 const allFacilities = [

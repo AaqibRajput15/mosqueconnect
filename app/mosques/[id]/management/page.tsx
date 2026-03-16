@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { Header } from '@/components/header'
 import { Footer } from '@/components/footer'
 import { ManagementBodyView } from '@/components/mosques/management-body-view'
-import { getMosqueById, getManagementByMosqueId } from '@/lib/mock-data'
+import { getMosqueById, getManagementByMosqueId } from '@/lib/services'
 
 interface ManagementPageProps {
   params: Promise<{ id: string }>
