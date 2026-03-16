@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { appDataStore } from '@/lib/server-data'
+import { shuraRepository } from '@/lib/backend/repositories'
 
 const allowed = ['members', 'visits', 'meetings', 'registrations', 'assessments', 'imamAppointments'] as const
 
-type WorkflowType = typeof allowed[number]
+type WorkflowType = (typeof allowed)[number]
 
 export async function GET(_: Request, { params }: { params: Promise<{ type: string }> }) {
   const { type } = await params
@@ -11,5 +11,5 @@ export async function GET(_: Request, { params }: { params: Promise<{ type: stri
     return NextResponse.json({ error: 'Unsupported workflow type' }, { status: 400 })
   }
 
-  return NextResponse.json({ data: appDataStore.shura[type as WorkflowType] })
+  return NextResponse.json({ data: await shuraRepository.listByType(type as WorkflowType) })
 }

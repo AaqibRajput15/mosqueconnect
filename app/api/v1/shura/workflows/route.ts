@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { shuraWorkflowSchema } from './schema'
-import { shuraWorkflowService } from '@/lib/services'
+import { shuraRepository } from '@/lib/backend/repositories'
 
 export async function GET() {
-  const data = shuraWorkflowService.getAll()
+  const data = await shuraRepository.list()
   return NextResponse.json({ data })
 }
 
