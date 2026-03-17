@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createMosqueSchema } from '../schema'
 import { mosqueRepository } from '@/lib/backend/repositories'
+import { setAuthCookie } from '@/lib/auth/cookies'
 import { authorizeApiRequest } from '@/lib/auth/server'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -9,7 +10,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { id } = await params
   const mosque = await mosqueRepository.getById(id)
   if (!mosque) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json({ data: mosque })
+  const response = NextResponse.json({ data: mosque })
+  if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+  return response
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -20,7 +23,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const parsed = createMosqueSchema.partial().parse(body)
   const updated = await mosqueRepository.update(id, parsed)
   if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json({ data: updated })
+  const response = NextResponse.json({ data: updated })
+  if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+  return response
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -29,5 +34,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const { id } = await params
   const removed = await mosqueRepository.remove(id)
   if (!removed) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json({ data: removed })
+  const response = NextResponse.json({ data: removed })
+  if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+  return response
 }

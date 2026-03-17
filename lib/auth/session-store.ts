@@ -154,6 +154,14 @@ export function revokeSession(token: string) {
   sessions.delete(token)
 }
 
+export function rotateSessionsForPrivilegeChange(userId: string) {
+  for (const [token, session] of sessions.entries()) {
+    if (session.userId === userId) {
+      sessions.delete(token)
+    }
+  }
+}
+
 export function getSessionByToken(token: string | undefined): SessionRecord | null {
   if (!token) return null
   const session = sessions.get(token)

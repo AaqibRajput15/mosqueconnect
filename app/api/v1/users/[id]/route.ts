@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createUserSchema } from '../schema'
 import { userRepository } from '@/lib/backend/repositories'
+import { setAuthCookie } from '@/lib/auth/cookies'
 import { authorizeApiRequest } from '@/lib/auth/server'
+import { rotateSessionsForPrivilegeChange } from '@/lib/auth/session-store'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await authorizeApiRequest(request, { resource: 'users', action: 'read' })
@@ -9,7 +11,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { id } = await params
   const item = await userRepository.getById(id)
   const response = item ? NextResponse.json({ data: item }) : NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if ('rotatedToken' in auth && auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+  if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
   return response
 }
 
