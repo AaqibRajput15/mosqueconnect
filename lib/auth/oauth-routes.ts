@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { AUTH_COOKIE } from '@/lib/auth/server'
 import { createSessionForUserId } from '@/lib/auth/session-store'
 import { upsertOAuthIdentity } from '@/lib/auth/oauth-store'
+import { setAuthCookie } from '@/lib/auth/cookies'
 import {
   consumeOAuthState,
   createNonce,
@@ -19,6 +19,23 @@ function authFailure(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status })
 }
 
+function sanitizeRedirectTo(redirectTo: string | null, origin: string) {
+  const fallback = '/'
+  if (!redirectTo) return fallback
+
+  try {
+    const parsed = new URL(redirectTo, origin)
+    const allowedPaths = new Set(['/','/feed', '/admin', '/shura', '/auth/sign-in', '/auth/sign-up'])
+
+    if (parsed.origin !== origin) return fallback
+    if (!allowedPaths.has(parsed.pathname)) return fallback
+
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`
+  } catch {
+    return fallback
+  }
+}
+
 export async function oauthStart(provider: OAuthProvider, request: Request) {
   const config = getOAuthProviderConfig(provider)
   if (!config) return authFailure(`OAuth is not configured for ${provider}.`, 503)
@@ -29,7 +46,7 @@ export async function oauthStart(provider: OAuthProvider, request: Request) {
   const nonce = createNonce()
 
   const requestUrl = new URL(request.url)
-  const redirectTo = requestUrl.searchParams.get('redirectTo') || '/'
+  const redirectTo = sanitizeRedirectTo(requestUrl.searchParams.get('redirectTo'), requestUrl.origin)
 
   await storeOAuthState({ provider, verifier, state, nonce, redirectTo, createdAt: Date.now() })
 
@@ -89,14 +106,12 @@ export async function oauthCallback(provider: OAuthProvider, request: Request) {
     const session = createSessionForUserId(user.id, provider)
     if (!session) return authFailure('Failed to create auth session.', 500)
 
-    const response = NextResponse.redirect(new URL(getRoleRedirect(user.role), callbackUrl.origin))
-    response.cookies.set(AUTH_COOKIE, session.token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 60 * 60 * 8,
-    })
+    const roleRedirect = getRoleRedirect(user.role)
+    const redirectPath = sanitizeRedirectTo(persistedState.redirectTo, callbackUrl.origin)
+    const destination = redirectPath === '/' ? roleRedirect : redirectPath
+
+    const response = NextResponse.redirect(new URL(destination, callbackUrl.origin))
+    setAuthCookie(response, session.token)
 
     return response
   } catch {
