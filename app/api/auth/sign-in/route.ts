@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { AUTH_COOKIE } from '@/lib/auth/server'
-import { authenticateWithCredentials, createSessionForUserId, SESSION_TTL_SECONDS } from '@/lib/auth/session-store'
+import { setAuthCookie } from '@/lib/auth/cookies'
+import { authenticateWithCredentials, createSessionForUserId } from '@/lib/auth/session-store'
 
 const signInSchema = z.object({
   email: z.string().trim().email(),
@@ -32,13 +32,7 @@ export async function POST(request: Request) {
   const session = createSessionForUserId(user.id, 'credentials')
 
   const response = NextResponse.json({ ok: true, user })
-  response.cookies.set(AUTH_COOKIE, session.token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: SESSION_TTL_SECONDS,
-  })
+  setAuthCookie(response, session.token)
 
   return response
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createFinanceRecordSchema } from '../schema'
 import { financeRecordRepository } from '@/lib/backend/repositories'
+import { setAuthCookie } from '@/lib/auth/cookies'
 import { authorizeApiRequest } from '@/lib/auth/server'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -15,7 +16,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   })
   if ('error' in auth) return auth.error
 
-  return NextResponse.json({ data: { ...item, recordType: item.type } })
+  const response = NextResponse.json({ data: { ...item, recordType: item.type } })
+  if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+  return response
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -35,7 +38,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const payload = createFinanceRecordSchema.partial().parse(normalized)
   const updated = await financeRecordRepository.update(id, payload)
   if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json({ data: { ...updated, recordType: updated.type } })
+  const response = NextResponse.json({ data: { ...updated, recordType: updated.type } })
+  if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+  return response
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -52,5 +57,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   const removed = await financeRecordRepository.remove(id)
   if (!removed) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json({ data: { ...removed, recordType: removed.type } })
+  const response = NextResponse.json({ data: { ...removed, recordType: removed.type } })
+  if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+  return response
 }

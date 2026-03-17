@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createEventSchema } from './schema'
 import { eventRepository } from '@/lib/backend/repositories'
+import { setAuthCookie } from '@/lib/auth/cookies'
 import { authorizeApiRequest } from '@/lib/auth/server'
 
 export async function GET(request: Request) {
   const auth = await authorizeApiRequest(request, { resource: 'events', action: 'read' })
   if ('error' in auth) return auth.error
-  return NextResponse.json({ data: await eventRepository.list() })
+  const response = NextResponse.json({ data: await eventRepository.list() })
+  if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+  return response
 }
 
 export async function POST(request: Request) {
@@ -23,5 +26,7 @@ export async function POST(request: Request) {
   const created = await eventRepository.create(
     auth.context.role === 'admin' ? payload : { ...payload, mosqueId: auth.context.scope.mosqueId ?? payload.mosqueId },
   )
-  return NextResponse.json({ data: created }, { status: 201 })
+  const response = NextResponse.json({ data: created }, { status: 201 })
+  if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+  return response
 }

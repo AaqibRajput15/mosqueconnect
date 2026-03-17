@@ -155,6 +155,7 @@ export function revokeSession(token: string) {
 }
 
 export function revokeAllSessionsForUser(userId: string) {
+export function rotateSessionsForPrivilegeChange(userId: string) {
   for (const [token, session] of sessions.entries()) {
     if (session.userId === userId) {
       sessions.delete(token)

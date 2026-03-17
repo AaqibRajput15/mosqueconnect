@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createFinanceRecordSchema } from './schema'
 import { financeRecordRepository } from '@/lib/backend/repositories'
+import { setAuthCookie } from '@/lib/auth/cookies'
 import { authorizeApiRequest } from '@/lib/auth/server'
 
 export async function GET(request: Request) {
@@ -10,7 +11,9 @@ export async function GET(request: Request) {
   const visibleRows = auth.context.role === 'admin'
     ? rows
     : rows.filter((record) => record.mosqueId === auth.context.scope.mosqueId)
-  return NextResponse.json({ data: visibleRows.map((record) => ({ ...record, recordType: record.type })) })
+  const response = NextResponse.json({ data: visibleRows.map((record) => ({ ...record, recordType: record.type })) })
+  if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+  return response
 }
 
 export async function POST(request: Request) {
@@ -28,5 +31,7 @@ export async function POST(request: Request) {
   const created = await financeRecordRepository.create(
     auth.context.role === 'admin' ? payload : { ...payload, mosqueId: auth.context.scope.mosqueId ?? payload.mosqueId },
   )
-  return NextResponse.json({ data: { ...created, recordType: created.type } }, { status: 201 })
+  const response = NextResponse.json({ data: { ...created, recordType: created.type } }, { status: 201 })
+  if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+  return response
 }

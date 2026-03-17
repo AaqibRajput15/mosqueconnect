@@ -48,7 +48,7 @@ export default function SignUpPage() {
     }
   }
 
-  const signUpWithOAuth = async (provider: 'google' | 'microsoft') => {
+  const signUpWithOAuth = (provider: 'google' | 'microsoft') => {
     const emailError = validateEmail(email)
     if (emailError) {
       setErrorCode(emailError)
@@ -58,24 +58,8 @@ export default function SignUpPage() {
     setErrorCode(null)
     setOauthLoading(provider)
 
-    try {
-      const response = await fetch(`/api/auth/oauth/${provider}/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, intent: 'sign-up' }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        setErrorCode(data.errorCode ?? 'unknown_error')
-        return
-      }
-
-      router.push('/admin')
-      router.refresh()
-    } finally {
-      setOauthLoading(null)
-    }
+    const redirectTo = '/admin'
+    window.location.assign(`/api/auth/oauth/${provider}/start?redirectTo=${encodeURIComponent(redirectTo)}`)
   }
 
   return (
