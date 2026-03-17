@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
-import { appDataStore } from '@/lib/server-data'
 import { createOneTimeToken } from '@/lib/auth/one-time-token-store'
+import { getOneTimeTokenRateLimitKey, isLockedOut, registerRateLimitedAction } from '@/lib/auth/rate-limit'
+import { sendResetPasswordEmail } from '@/lib/auth/email-adapter'
+import { appDataStore } from '@/lib/server-data'
+
+const SUCCESS_RESPONSE = { ok: true }
 
 export async function POST(request: Request) {
   const body = await request.json()
@@ -10,21 +14,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 })
   }
 
-  const user = appDataStore.users.find((candidate) => candidate.email.toLowerCase() === email)
-  if (!user) {
-    return NextResponse.json({ ok: true })
+  const rateLimitKey = getOneTimeTokenRateLimitKey(request, email, 'reset_password')
+  if (isLockedOut(rateLimitKey)) {
+    return NextResponse.json(SUCCESS_RESPONSE)
   }
 
-  const { token, expiresAt } = await createOneTimeToken({
+  registerRateLimitedAction(rateLimitKey)
+
+  const user = appDataStore.users.find((candidate) => candidate.email.toLowerCase() === email)
+  if (!user) {
+    return NextResponse.json(SUCCESS_RESPONSE)
+  }
+
+  const { token } = await createOneTimeToken({
     userId: user.id,
     purpose: 'reset_password',
     ttlMinutes: 15,
   })
 
-  return NextResponse.json({
-    ok: true,
-    token,
-    expiresAt,
-    resetUrl: `/auth/reset-password?token=${token}`,
-  })
+  await sendResetPasswordEmail({ userId: user.id, token })
+
+  return NextResponse.json(SUCCESS_RESPONSE)
 }

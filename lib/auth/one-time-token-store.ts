@@ -1,4 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'crypto'
+import { promises as fs } from 'node:fs'
+import path from 'node:path'
 import { appDataStore } from '@/lib/server-data'
 import { supabaseRest } from '@/lib/backend/supabase-rest'
 
@@ -15,6 +17,7 @@ interface OneTimeTokenRecord {
 }
 
 const fallbackTokens: OneTimeTokenRecord[] = []
+const TOKEN_SPOOL_PATH = path.join(process.cwd(), '.tmp', 'one-time-token-spool.json')
 
 const ONE_TIME_TOKEN_TABLE = 'auth_one_time_tokens'
 const TOKEN_BYTE_LENGTH = 32
@@ -27,7 +30,22 @@ function isExpired(record: Pick<OneTimeTokenRecord, 'expiresAt'>) {
   return new Date(record.expiresAt).getTime() <= Date.now()
 }
 
-async function withFallback<T>(handler: () => Promise<T>, fallback: () => T): Promise<T> {
+async function readFallbackTokensFromDisk() {
+  try {
+    const raw = await fs.readFile(TOKEN_SPOOL_PATH, 'utf8')
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as OneTimeTokenRecord[]) : []
+  } catch {
+    return []
+  }
+}
+
+async function writeFallbackTokensToDisk(tokens: OneTimeTokenRecord[]) {
+  await fs.mkdir(path.dirname(TOKEN_SPOOL_PATH), { recursive: true })
+  await fs.writeFile(TOKEN_SPOOL_PATH, JSON.stringify(tokens), 'utf8')
+}
+
+async function withFallback<T>(handler: () => Promise<T>, fallback: () => Promise<T>): Promise<T> {
   if (!supabaseRest.enabled()) return fallback()
   try {
     return await handler()
@@ -57,8 +75,11 @@ export async function createOneTimeToken(input: {
     async () => {
       await supabaseRest.insert<OneTimeTokenRecord>(ONE_TIME_TOKEN_TABLE, record as unknown as Record<string, unknown>)
     },
-    () => {
+    async () => {
       fallbackTokens.push(record)
+      const diskTokens = await readFallbackTokensFromDisk()
+      diskTokens.push(record)
+      await writeFallbackTokensToDisk(diskTokens)
     },
   )
 
@@ -79,12 +100,23 @@ export async function consumeOneTimeToken(input: { token: string; purpose: OneTi
       if (record.usedAt || isExpired(record)) return null
       return supabaseRest.update<OneTimeTokenRecord>(ONE_TIME_TOKEN_TABLE, record.id, { usedAt: new Date().toISOString() })
     },
-    () => {
-      const record = fallbackTokens.find((row) => row.tokenHash === tokenHash && row.purpose === input.purpose)
-      if (!record) return null
-      if (record.usedAt || isExpired(record)) return null
-      record.usedAt = new Date().toISOString()
-      return record
+    async () => {
+      const nowIso = new Date().toISOString()
+      const memoryRecord = fallbackTokens.find((row) => row.tokenHash === tokenHash && row.purpose === input.purpose)
+      if (memoryRecord && !memoryRecord.usedAt && !isExpired(memoryRecord)) {
+        memoryRecord.usedAt = nowIso
+      }
+
+      const diskTokens = await readFallbackTokensFromDisk()
+      const diskRecord = diskTokens.find((row) => row.tokenHash === tokenHash && row.purpose === input.purpose)
+      if (diskRecord && !diskRecord.usedAt && !isExpired(diskRecord)) {
+        diskRecord.usedAt = nowIso
+        await writeFallbackTokensToDisk(diskTokens)
+        return diskRecord
+      }
+
+      if (!memoryRecord || memoryRecord.usedAt || isExpired(memoryRecord)) return null
+      return memoryRecord
     },
   )
 
