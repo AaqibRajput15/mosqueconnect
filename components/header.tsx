@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { 
+import {
   Moon, 
   Sun, 
   Menu, 
@@ -15,7 +15,10 @@ import {
   LayoutDashboard,
   Building2,
   Shield,
-  Rss
+  Rss,
+  LogIn,
+  UserPlus,
+  Chrome
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
@@ -77,6 +80,25 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Link href="/auth/sign-in" className="hidden md:block">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <LogIn className="h-4 w-4" />
+              Sign in
+            </Button>
+          </Link>
+          <Link href="/auth/sign-up" className="hidden md:block">
+            <Button size="sm" className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Sign up
+            </Button>
+          </Link>
+          <Link href="/api/auth/oauth/google/start?redirectTo=/" className="hidden xl:block">
+            <Button variant="outline" size="sm" className="gap-2">
+              <Chrome className="h-4 w-4" />
+              Continue with Google
+            </Button>
+          </Link>
+
           <Link href="/shura" className="hidden sm:block">
             <Button variant="outline" size="sm" className="gap-2 border-teal-600 text-teal-600 hover:bg-teal-50 hover:text-teal-700 dark:border-teal-500 dark:text-teal-500 dark:hover:bg-teal-950 dark:hover:text-teal-400">
               <Shield className="h-4 w-4" />
@@ -150,6 +172,30 @@ export function Header() {
                 </Link>
               )
             })}
+            <Link
+              href="/auth/sign-in"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <LogIn className="h-4 w-4" />
+              Sign in
+            </Link>
+            <Link
+              href="/auth/sign-up"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
+            >
+              <UserPlus className="h-4 w-4" />
+              Sign up
+            </Link>
+            <Link
+              href="/api/auth/oauth/google/start?redirectTo=/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Chrome className="h-4 w-4" />
+              Continue with Google
+            </Link>
             <Link
               href="/shura"
               onClick={() => setMobileMenuOpen(false)}
