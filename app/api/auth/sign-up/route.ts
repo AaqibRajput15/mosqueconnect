@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { AUTH_COOKIE } from '@/lib/auth/server'
+import { setAuthCookie } from '@/lib/auth/cookies'
 import { hashPassword } from '@/lib/auth/password'
-import { registerCredentialsAccount, SESSION_TTL_SECONDS } from '@/lib/auth/session-store'
+import { registerCredentialsAccount } from '@/lib/auth/session-store'
 
 const signUpSchema = z.object({
   email: z.string().trim().email(),
@@ -38,13 +38,7 @@ export async function POST(request: Request) {
   }
 
   const response = NextResponse.json({ ok: true, user: result.user }, { status: 201 })
-  response.cookies.set(AUTH_COOKIE, result.session.token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: SESSION_TTL_SECONDS,
-  })
+  setAuthCookie(response, result.session.token)
 
   return response
 }
