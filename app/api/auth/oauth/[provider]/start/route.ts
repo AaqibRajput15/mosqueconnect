@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server'
-import { type AuthProvider, startOAuth } from '@/lib/auth/session-store'
+import { startOAuth } from '@/lib/auth/session-store'
 import { AUTH_COOKIE } from '@/lib/auth/server'
 
-const validProviders: AuthProvider[] = ['google', 'microsoft']
+const validProviders = ['google', 'microsoft'] as const
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ provider: string }> },
 ) {
   const { provider } = await context.params
-  if (!validProviders.includes(provider as AuthProvider)) {
+  if (!validProviders.includes(provider as (typeof validProviders)[number])) {
     return NextResponse.json({ errorCode: 'provider_mismatch' }, { status: 400 })
   }
 
@@ -17,7 +17,7 @@ export async function POST(
   const email = String(body.email ?? '')
   const intent = body.intent === 'sign-up' ? 'sign-up' : 'sign-in'
 
-  const { session, errorCode } = startOAuth(email, provider as AuthProvider, intent)
+  const { session, errorCode } = startOAuth(email, provider as 'google' | 'microsoft', intent)
 
   if (!session) {
     return NextResponse.json({ errorCode: errorCode ?? 'provider_mismatch' }, { status: 409 })

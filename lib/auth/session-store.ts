@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import type { User } from '@/lib/types'
 import { appDataStore, generateId } from '@/lib/server-data'
 import { verifyPassword } from './password'
@@ -9,13 +10,6 @@ export type AuthErrorCode =
   | 'account_exists'
   | 'provider_mismatch'
   | 'account_not_found'
-
-interface AuthAccount {
-  email: string
-  userId: string
-  provider: AuthProvider
-  password?: string
-}
 
 export interface SessionRecord {
   token: string
@@ -40,22 +34,22 @@ interface RegisterCredentialsInput {
   passwordHash: string
 }
 
+interface SessionResolution {
+  user: User | null
+  session: SessionRecord | null
+  rotatedToken?: string
+}
+
 const sessions = new Map<string, SessionRecord>()
 const credentialIdentities = new Map<string, IdentityRecord>()
 export const SESSION_TTL_SECONDS = 60 * 60 * 8
 const SESSION_TTL_MS = SESSION_TTL_SECONDS * 1000
+const SESSION_REFRESH_MS = 1000 * 60 * 30
 
-export function createSession(email: string, provider: AuthProvider): SessionRecord | null {
-  const user = appDataStore.users.find((u) => u.email.toLowerCase() === email.toLowerCase())
-  if (!user) return null
-  return createSessionForUserId(user.id, provider)
-}
-
-export function createSessionForUserId(userId: string, provider: AuthProvider = 'credentials'): SessionRecord {
+function createSessionRecord(userId: string, provider: AuthProvider): SessionRecord {
   const token = randomUUID()
   const now = Date.now()
-
-  const session: SessionRecord = {
+  return {
     token,
     userId,
     provider,
@@ -66,12 +60,51 @@ export function createSessionForUserId(userId: string, provider: AuthProvider = 
 }
 
 export function createSession(email: string, provider: AuthProvider): SessionRecord | null {
-  const user = appDataStore.users.find((u) => u.email.toLowerCase() === email.toLowerCase())
+  const user = appDataStore.users.find((u) => u.email.toLowerCase() === email.toLowerCase().trim())
   if (!user) return null
+  return createSessionForUserId(user.id, provider)
+}
 
-  const session = createSessionRecord(user.id, provider)
+export function createSessionForUserId(userId: string, provider: AuthProvider = 'credentials'): SessionRecord {
+  const session = createSessionRecord(userId, provider)
   sessions.set(session.token, session)
   return session
+}
+
+export function createUser(email: string, name?: string): User {
+  const normalizedEmail = email.toLowerCase().trim()
+  const existing = appDataStore.users.find((u) => u.email.toLowerCase() === normalizedEmail)
+  if (existing) return existing
+
+  const user: User = {
+    id: generateId('user'),
+    email: normalizedEmail,
+    name: name?.trim() || normalizedEmail,
+    role: 'member',
+    createdAt: new Date().toISOString(),
+    emailVerified: true,
+  }
+
+  appDataStore.users.push(user)
+  return user
+}
+
+export function startOAuth(
+  email: string,
+  provider: Exclude<AuthProvider, 'credentials'>,
+  intent: 'sign-in' | 'sign-up',
+): { session: SessionRecord | null; errorCode?: AuthErrorCode } {
+  const normalizedEmail = email.toLowerCase().trim()
+  if (!normalizedEmail) return { session: null, errorCode: 'account_not_found' }
+
+  const user = appDataStore.users.find((u) => u.email.toLowerCase() === normalizedEmail)
+
+  if (!user && intent === 'sign-in') {
+    return { session: null, errorCode: 'account_not_found' }
+  }
+
+  const resolvedUser = user ?? createUser(normalizedEmail, normalizedEmail)
+  return { session: createSessionForUserId(resolvedUser.id, provider) }
 }
 
 export function registerCredentialsAccount(input: RegisterCredentialsInput) {
@@ -121,14 +154,6 @@ export function revokeSession(token: string) {
   sessions.delete(token)
 }
 
-export function revokeAllUserSessions(userId: string) {
-  for (const [token, session] of sessions.entries()) {
-    if (session.userId === userId) {
-      sessions.delete(token)
-    }
-  }
-}
-
 export function getSessionByToken(token: string | undefined): SessionRecord | null {
   if (!token) return null
   const session = sessions.get(token)
@@ -165,15 +190,6 @@ export function resolveUserSession(token: string | undefined): SessionResolution
 
 export function getUserForSession(token: string | undefined): User | null {
   return resolveUserSession(token).user
-}
-
-export function rotateSessionsForPrivilegeChange(userId: string) {
-  const userSessions = [...sessions.values()].filter((session) => session.userId === userId)
-  for (const session of userSessions) {
-    sessions.delete(session.token)
-    const rotated = createSessionRecord(userId, session.provider)
-    sessions.set(rotated.token, rotated)
-  }
 }
 
 export function clearAuthStateForTests() {

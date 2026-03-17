@@ -4,30 +4,23 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
-  Moon, 
-  Sun, 
-  Menu, 
-  X, 
-  MapPin, 
-  Clock, 
-  Calendar, 
-  Users, 
+  Moon,
+  Sun,
+  Menu,
+  X,
+  MapPin,
+  Clock,
+  Calendar,
+  Users,
   LayoutDashboard,
   Building2,
   Shield,
   Rss,
   LogIn,
-  UserPlus,
-  Chrome
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -41,7 +34,7 @@ const navigation = [
 
 export function Header() {
   const pathname = usePathname()
-  const { setTheme, theme } = useTheme()
+  const { setTheme } = useTheme()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
@@ -65,10 +58,8 @@ export function Header() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    isActive 
-                      ? "bg-primary/10 text-primary" 
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                    isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >
                   <item.icon className="h-4 w-4" />
@@ -80,25 +71,12 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/auth/sign-in" className="hidden md:block">
-            <Button variant="ghost" size="sm" className="gap-2">
+          <Link href="/auth/sign-in" className="hidden sm:block">
+            <Button variant="outline" size="sm" className="gap-2">
               <LogIn className="h-4 w-4" />
               Sign in
             </Button>
           </Link>
-          <Link href="/auth/sign-up" className="hidden md:block">
-            <Button size="sm" className="gap-2">
-              <UserPlus className="h-4 w-4" />
-              Sign up
-            </Button>
-          </Link>
-          <Link href="/api/auth/oauth/google/start?redirectTo=/" className="hidden xl:block">
-            <Button variant="outline" size="sm" className="gap-2">
-              <Chrome className="h-4 w-4" />
-              Continue with Google
-            </Button>
-          </Link>
-
           <Link href="/shura" className="hidden sm:block">
             <Button variant="outline" size="sm" className="gap-2 border-teal-600 text-teal-600 hover:bg-teal-50 hover:text-teal-700 dark:border-teal-500 dark:text-teal-500 dark:hover:bg-teal-950 dark:hover:text-teal-400">
               <Shield className="h-4 w-4" />
@@ -121,35 +99,19 @@ export function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setTheme("light")}>
-                Light
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("dark")}>
-                Dark
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("system")}>
-                System
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
+          <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             <span className="sr-only">Toggle menu</span>
           </Button>
         </div>
       </nav>
 
-      {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden">
           <div className="space-y-1 px-4 pb-4">
@@ -161,10 +123,8 @@ export function Header() {
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                    isActive 
-                      ? "bg-primary/10 text-primary" 
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                    isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   )}
                 >
                   <item.icon className="h-4 w-4" />
@@ -172,45 +132,17 @@ export function Header() {
                 </Link>
               )
             })}
-            <Link
-              href="/auth/sign-in"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
+            <Link href="/auth/sign-in" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
               <LogIn className="h-4 w-4" />
               Sign in
             </Link>
-            <Link
-              href="/auth/sign-up"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-primary hover:bg-primary/10"
-            >
-              <UserPlus className="h-4 w-4" />
-              Sign up
-            </Link>
-            <Link
-              href="/api/auth/oauth/google/start?redirectTo=/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <Chrome className="h-4 w-4" />
-              Continue with Google
-            </Link>
-            <Link
-              href="/shura"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950"
-            >
+            <Link href="/shura" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950">
               <Shield className="h-4 w-4" />
-              Shura Panel
+              Shura
             </Link>
-            <Link
-              href="/admin"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
+            <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
               <LayoutDashboard className="h-4 w-4" />
-              Admin Dashboard
+              Admin
             </Link>
           </div>
         </div>
