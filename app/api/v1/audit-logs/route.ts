@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { setAuthCookie } from '@/lib/auth/cookies'
 import { authorizeApiRequest } from '@/lib/auth/server'
 import { AuditEventType, AuditOutcome, buildAuditContext, listAuditLogs, logAudit } from '@/lib/auth/audit-log'
 
@@ -20,7 +21,9 @@ export async function GET(request: Request) {
       metadata: { reason: 'admin_only_audit_logs' },
     })
 
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const response = NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+    return response
   }
 
   const { searchParams } = new URL(request.url)
@@ -44,5 +47,7 @@ export async function GET(request: Request) {
     },
   })
 
-  return NextResponse.json(result)
+  const response = NextResponse.json(result)
+  if (auth.rotatedToken) setAuthCookie(response, auth.rotatedToken)
+  return response
 }
