@@ -1,13 +1,13 @@
 "use client"
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { renderInlineAuthError, validateEmail, validateSignInForm } from '@/components/auth/auth-form-utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { renderInlineAuthError, validateSignInForm } from '@/components/auth/auth-form-utils'
 
 export default function SignInPage() {
   const [email, setEmail] = useState('admin@mosqueconnect.org')
@@ -15,6 +15,7 @@ export default function SignInPage() {
   const [errorCode, setErrorCode] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState<'google' | 'microsoft' | null>(null)
+  const [isSwitchingAccount, setIsSwitchingAccount] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -31,40 +32,10 @@ export default function SignInPage() {
   }, [searchParams])
 
   const signIn = async () => {
-    setError('')
-
-    if (provider === 'google' || provider === 'microsoft') {
-      window.location.href = `/api/auth/oauth/${provider}/start`
+    const formError = validateSignInForm(email, password)
+    if (formError) {
+      setErrorCode(formError)
       return
-    }
-
-    const response = await fetch('/api/auth/sign-in', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, provider }),
-    })
-
-    try {
-      const csrfToken = await fetchCsrfToken()
-      const response = await fetch('/api/auth/sign-in', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrf-token': csrfToken,
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email, provider }),
-      })
-
-      if (!response.ok) {
-        setError('Unable to sign in with the selected provider/account.')
-        return
-      }
-
-      router.push('/admin')
-      router.refresh()
-    } catch {
-      setError('Unable to sign in with the selected provider/account.')
     }
 
     setErrorCode(null)
@@ -91,7 +62,7 @@ export default function SignInPage() {
   }
 
   const signInWithOAuth = async (provider: 'google' | 'microsoft') => {
-    const emailError = validateSignInForm(email, 'oauth-placeholder')
+    const emailError = validateEmail(email)
     if (emailError) {
       setErrorCode(emailError)
       return
@@ -134,13 +105,21 @@ export default function SignInPage() {
           <CardDescription>Use email/password or continue with your provider.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {isSwitchingAccount ? (
+            <p className="text-sm text-muted-foreground">Switching account…</p>
+          ) : (
+            <Button variant="outline" className="w-full" onClick={signOutCurrentSession}>
+              Sign out current session
+            </Button>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
               value={email}
-              disabled={isLoading || Boolean(oauthLoading)}
+              disabled={isLoading || Boolean(oauthLoading) || isSwitchingAccount}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
@@ -150,14 +129,18 @@ export default function SignInPage() {
               id="password"
               type="password"
               value={password}
-              disabled={isLoading || Boolean(oauthLoading)}
+              disabled={isLoading || Boolean(oauthLoading) || isSwitchingAccount}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
           {renderInlineAuthError(errorCode)}
 
-          <Button className="w-full" onClick={signIn} disabled={isLoading || Boolean(oauthLoading)}>
+          <Button
+            className="w-full"
+            onClick={signIn}
+            disabled={isLoading || Boolean(oauthLoading) || isSwitchingAccount}
+          >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </Button>
 
@@ -165,14 +148,14 @@ export default function SignInPage() {
             <Button
               variant="outline"
               onClick={() => signInWithOAuth('google')}
-              disabled={isLoading || Boolean(oauthLoading)}
+              disabled={isLoading || Boolean(oauthLoading) || isSwitchingAccount}
             >
               {oauthLoading === 'google' ? 'Connecting...' : 'Continue with Google'}
             </Button>
             <Button
               variant="outline"
               onClick={() => signInWithOAuth('microsoft')}
-              disabled={isLoading || Boolean(oauthLoading)}
+              disabled={isLoading || Boolean(oauthLoading) || isSwitchingAccount}
             >
               {oauthLoading === 'microsoft' ? 'Connecting...' : 'Continue with Microsoft'}
             </Button>

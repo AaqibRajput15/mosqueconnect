@@ -1,20 +1,12 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import type { User } from '@/lib/types'
-import { getUserForSession } from './session-store'
-import {
-  canAccessRoute,
-  evaluatePermission,
-  type AuthorizationScope,
-  type Permission,
-  type PermissionAction,
-  type PermissionResource,
-} from './permissions'
-import { logAudit } from './audit-log'
+import type { User, UserRole } from '@/lib/types'
+import { buildAuditContext, logAudit } from './audit-log'
+import { canAccessRoute, evaluatePermission, type AuthorizationScope, type Permission } from './permissions'
 import { canAccessPrivilegedRoute } from './email-verification-policy'
+import { resolveUserSession } from './session-store'
 
 export const AUTH_COOKIE = 'mc_session'
-
 const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
 export const roleHomeMap: Record<UserRole, string> = {
@@ -25,10 +17,34 @@ export const roleHomeMap: Record<UserRole, string> = {
   visitor: '/mosques',
 }
 
+interface ApiAuthContext {
+  role: UserRole
+  scope: AuthorizationScope
+}
+
+interface ApiAuthorizedResult {
+  user: User
+  rotatedToken?: string
+  context: ApiAuthContext
+}
+
+interface ApiDeniedResult {
+  error: NextResponse
+}
+
 function getProtectedRoute(pathname: string): '/admin' | '/shura' | null {
   if (pathname.startsWith('/admin')) return '/admin'
   if (pathname.startsWith('/shura')) return '/shura'
   return null
+}
+
+function getTokenFromCookieHeader(request: Request) {
+  const cookieHeader = request.headers.get('cookie') ?? ''
+  return cookieHeader
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${AUTH_COOKIE}=`))
+    ?.split('=')[1]
 }
 
 export function getDefaultDashboard(role: UserRole) {
@@ -49,18 +65,10 @@ export async function guardRouteAccess(pathname: string) {
   }
 
   const protectedRoute = getProtectedRoute(pathname)
+  if (!protectedRoute) return { user }
 
-  if (!protectedRoute) {
-    return { user }
-  }
-
-  if (!user) {
-    return { redirectPath: '/auth/sign-in' }
-  }
-
-  if (!canAccessRoute(user.role, protectedRoute)) {
-    return { redirectPath: '/forbidden' }
-  }
+  if (!user) return { redirectPath: '/auth/sign-in' }
+  if (!canAccessRoute(user.role, protectedRoute)) return { redirectPath: '/forbidden' }
 
   return { user }
 }
@@ -74,45 +82,73 @@ export async function requireRouteAccess(pathname: string) {
   return { user: guardResult.user ?? null }
 }
 
-export async function requireApiPermission(request: Request, permission: Permission) {
-  const cookieHeader = request.headers.get('cookie') ?? ''
-  const token = cookieHeader
-    .split(';')
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${AUTH_COOKIE}=`))
-    ?.split('=')[1]
-
-  const user = getUserForSession(token)
+export async function requireApiPermission(
+  request: Request,
+  permission: Permission,
+  options?: { scope?: AuthorizationScope },
+): Promise<ApiDeniedResult | { user: User; scope: AuthorizationScope; rotatedToken?: string }> {
+  const token = getTokenFromCookieHeader(request)
+  const resolved = resolveUserSession(token)
+  const user = resolved.user
   const context = buildAuditContext(request)
 
   if (!user) {
-    logApiAuthorization(request, permission, 'denied', undefined, {
-      reason: 'unauthenticated',
-      scope: options.scope,
+    await logAudit({
+      eventType: 'rbac.denied',
+      outcome: 'failure',
+      ...context,
+      metadata: { permission, reason: 'unauthenticated' },
     })
     return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   }
 
   const scope: AuthorizationScope = {
-    mosqueId: options.scope?.mosqueId ?? user.mosqueId,
-    tenantId: options.scope?.tenantId,
+    mosqueId: options?.scope?.mosqueId ?? user.mosqueId,
+    tenantId: options?.scope?.tenantId,
   }
 
   const evaluation = evaluatePermission({ permission, role: user.role, user, scope })
-
   if (!evaluation.allowed) {
-    logApiAuthorization(request, permission, 'denied', user, {
-      reason: evaluation.reason,
-      scope,
+    await logAudit({
+      eventType: 'rbac.denied',
+      outcome: 'failure',
+      actorId: user.id,
+      actorRole: user.role,
+      ...context,
+      metadata: { permission, reason: evaluation.reason, scope },
     })
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
 
   if (!canAccessPrivilegedRoute(user)) {
-    logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'denied', metadata: { reason: 'email_unverified' } })
+    await logAudit({
+      eventType: 'rbac.denied',
+      outcome: 'failure',
+      actorId: user.id,
+      actorRole: user.role,
+      ...context,
+      metadata: { permission, reason: 'email_unverified' },
+    })
     return { error: NextResponse.json({ error: 'Email verification required' }, { status: 403 }) }
   }
 
-  logAudit({ action: `api:${permission}`, actorId: user.id, actorRole: user.role, path: request.url, status: 'allowed' })
-  return { user, rotatedToken: resolved.rotatedToken }
+  return { user, scope, rotatedToken: resolved.rotatedToken }
+}
+
+export async function authorizeApiRequest(
+  request: Request,
+  options: { resource: string; action: 'view' | 'read' | 'create' | 'update' | 'delete'; scope?: AuthorizationScope },
+): Promise<ApiAuthorizedResult | ApiDeniedResult> {
+  const permission = `${options.resource}:${options.action}` as Permission
+  const result = await requireApiPermission(request, permission, { scope: options.scope })
+  if ('error' in result) return result
+
+  return {
+    user: result.user,
+    rotatedToken: result.rotatedToken,
+    context: {
+      role: result.user.role,
+      scope: result.scope,
+    },
+  }
 }
