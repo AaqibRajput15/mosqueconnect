@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { renderInlineAuthError, validateEmail, validateSignInForm } from '@/components/auth/auth-form-utils'
+import { renderInlineAuthError, validateSignInForm } from '@/components/auth/auth-form-utils'
+import { fetchCsrfToken } from '@/lib/auth/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -14,7 +15,6 @@ export default function SignInPage() {
   const [password, setPassword] = useState('password123')
   const [errorCode, setErrorCode] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [oauthLoading, setOauthLoading] = useState<'google' | 'microsoft' | null>(null)
   const [isSwitchingAccount, setIsSwitchingAccount] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -24,7 +24,8 @@ export default function SignInPage() {
 
     const switchAccount = async () => {
       setIsSwitchingAccount(true)
-      await fetch('/api/auth/sign-out', { method: 'POST' })
+      const csrfToken = await fetchCsrfToken()
+      await fetch('/api/auth/sign-out', { method: 'POST', headers: { 'x-csrf-token': csrfToken } })
       setIsSwitchingAccount(false)
     }
 
@@ -61,32 +62,19 @@ export default function SignInPage() {
     }
   }
 
-  const signInWithOAuth = (provider: 'google' | 'microsoft') => {
-    const emailError = validateEmail(email)
-    if (emailError) {
-      setErrorCode(emailError)
-      return
-    }
-
-    setErrorCode(null)
-    setOauthLoading(provider)
-
-    const redirectTo = '/admin'
-    window.location.assign(`/api/auth/oauth/${provider}/start?redirectTo=${encodeURIComponent(redirectTo)}`)
-  }
-
   const signOutCurrentSession = async () => {
     setIsSwitchingAccount(true)
-    await fetch('/api/auth/sign-out', { method: 'POST' })
+    const csrfToken = await fetchCsrfToken()
+    await fetch('/api/auth/sign-out', { method: 'POST', headers: { 'x-csrf-token': csrfToken } })
     setIsSwitchingAccount(false)
   }
 
   return (
     <main className="container mx-auto max-w-md py-16">
       <Card>
-        <CardHeader>
+          <CardHeader>
           <CardTitle>Sign in</CardTitle>
-          <CardDescription>Use email/password or continue with your provider.</CardDescription>
+          <CardDescription>Sign in with your email and password.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {isSwitchingAccount ? (
@@ -103,7 +91,7 @@ export default function SignInPage() {
               id="email"
               type="email"
               value={email}
-              disabled={isLoading || Boolean(oauthLoading) || isSwitchingAccount}
+              disabled={isLoading || isSwitchingAccount}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
@@ -113,7 +101,7 @@ export default function SignInPage() {
               id="password"
               type="password"
               value={password}
-              disabled={isLoading || Boolean(oauthLoading) || isSwitchingAccount}
+              disabled={isLoading || isSwitchingAccount}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
@@ -123,27 +111,10 @@ export default function SignInPage() {
           <Button
             className="w-full"
             onClick={signIn}
-            disabled={isLoading || Boolean(oauthLoading) || isSwitchingAccount}
+            disabled={isLoading || isSwitchingAccount}
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </Button>
-
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant="outline"
-              onClick={() => signInWithOAuth('google')}
-              disabled={isLoading || Boolean(oauthLoading) || isSwitchingAccount}
-            >
-              {oauthLoading === 'google' ? 'Connecting...' : 'Continue with Google'}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => signInWithOAuth('microsoft')}
-              disabled={isLoading || Boolean(oauthLoading) || isSwitchingAccount}
-            >
-              {oauthLoading === 'microsoft' ? 'Connecting...' : 'Continue with Microsoft'}
-            </Button>
-          </div>
 
           <p className="text-sm text-muted-foreground">
             New here?{' '}

@@ -25,7 +25,7 @@ test('guard redirects across /admin and /shura plus login/logout flow', async ()
   const adminSignIn = await fetch(`${server.baseUrl}/api/auth/sign-in`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email: 'admin@mosqueconnect.org', provider: 'credentials' }),
+    body: JSON.stringify({ email: 'admin@mosqueconnect.org', password: 'password123' }),
   })
   const adminCookie = (adminSignIn.headers.get('set-cookie') ?? '').split(';')[0]
 
@@ -35,15 +35,22 @@ test('guard redirects across /admin and /shura plus login/logout flow', async ()
   const shuraPageAsAdmin = await fetch(`${server.baseUrl}/shura`, { headers: { cookie: adminCookie } })
   assert.equal(shuraPageAsAdmin.status, 200)
 
+  const csrfResponse = await fetch(`${server.baseUrl}/api/auth/csrf`, {
+    headers: { cookie: adminCookie },
+  })
+  const csrfBody = (await csrfResponse.json()) as { token: string }
+  const csrfCookie = (csrfResponse.headers.get('set-cookie') ?? '').split(';')[0]
+  const authAndCsrfCookie = `${adminCookie}; ${csrfCookie}`
+
   await fetch(`${server.baseUrl}/api/auth/sign-out`, {
     method: 'POST',
-    headers: { cookie: adminCookie },
+    headers: { cookie: authAndCsrfCookie, 'x-csrf-token': csrfBody.token },
   })
 
   const memberSignIn = await fetch(`${server.baseUrl}/api/auth/sign-in`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email: 'member@example.org', provider: 'credentials' }),
+    body: JSON.stringify({ email: 'member@example.org', password: 'password123' }),
   })
   assert.equal(memberSignIn.status, 200)
   const memberCookie = (memberSignIn.headers.get('set-cookie') ?? '').split(';')[0]

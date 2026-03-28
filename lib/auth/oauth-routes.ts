@@ -103,7 +103,7 @@ export async function oauthCallback(provider: OAuthProvider, request: Request) {
       name: claims.name ?? claims.preferred_username ?? email,
     })
 
-    const session = createSessionForUserId(user.id, provider)
+    const session = createSessionForUserId(user.id, 'credentials')
     if (!session) return authFailure('Failed to create auth session.', 500)
 
     const roleRedirect = getRoleRedirect(user.role)

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { clearAuthCookie, deserializeSessionCookie } from '@/lib/auth/cookies'
 import { validateCsrfToken } from '@/lib/auth/csrf'
 import { AUTH_COOKIE } from '@/lib/auth/server'
+import { revokeSession } from '@/lib/auth/session-store'
 import { revokeSupabaseSession } from '@/lib/auth/supabase-auth'
 
 function readSessionToken(request: Request): string | undefined {
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
   }
 
   const token = readSessionToken(request)
+  if (token) revokeSession(token)
   const session = deserializeSessionCookie(token)
   if (session) {
     await revokeSupabaseSession(session.accessToken, allSessions)

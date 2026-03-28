@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { renderInlineAuthError, validateEmail, validateSignUpForm } from '@/components/auth/auth-form-utils'
+import { renderInlineAuthError, validateSignUpForm } from '@/components/auth/auth-form-utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -15,7 +15,6 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState('password123')
   const [errorCode, setErrorCode] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [oauthLoading, setOauthLoading] = useState<'google' | 'microsoft' | null>(null)
   const router = useRouter()
 
   const signUp = async () => {
@@ -48,26 +47,12 @@ export default function SignUpPage() {
     }
   }
 
-  const signUpWithOAuth = (provider: 'google' | 'microsoft') => {
-    const emailError = validateEmail(email)
-    if (emailError) {
-      setErrorCode(emailError)
-      return
-    }
-
-    setErrorCode(null)
-    setOauthLoading(provider)
-
-    const redirectTo = '/admin'
-    window.location.assign(`/api/auth/oauth/${provider}/start?redirectTo=${encodeURIComponent(redirectTo)}`)
-  }
-
   return (
     <main className="container mx-auto max-w-md py-16">
       <Card>
         <CardHeader>
           <CardTitle>Create account</CardTitle>
-          <CardDescription>Sign up with email/password or use an OAuth provider.</CardDescription>
+          <CardDescription>Create your account with email and password.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -76,7 +61,7 @@ export default function SignUpPage() {
               id="email"
               type="email"
               value={email}
-              disabled={isLoading || Boolean(oauthLoading)}
+              disabled={isLoading}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
@@ -86,7 +71,7 @@ export default function SignUpPage() {
               id="password"
               type="password"
               value={password}
-              disabled={isLoading || Boolean(oauthLoading)}
+              disabled={isLoading}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
@@ -96,33 +81,16 @@ export default function SignUpPage() {
               id="confirm-password"
               type="password"
               value={confirmPassword}
-              disabled={isLoading || Boolean(oauthLoading)}
+              disabled={isLoading}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
           </div>
 
           {renderInlineAuthError(errorCode)}
 
-          <Button className="w-full" onClick={signUp} disabled={isLoading || Boolean(oauthLoading)}>
+          <Button className="w-full" onClick={signUp} disabled={isLoading}>
             {isLoading ? 'Creating account...' : 'Create account'}
           </Button>
-
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant="outline"
-              onClick={() => signUpWithOAuth('google')}
-              disabled={isLoading || Boolean(oauthLoading)}
-            >
-              {oauthLoading === 'google' ? 'Connecting...' : 'Sign up with Google'}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => signUpWithOAuth('microsoft')}
-              disabled={isLoading || Boolean(oauthLoading)}
-            >
-              {oauthLoading === 'microsoft' ? 'Connecting...' : 'Sign up with Microsoft'}
-            </Button>
-          </div>
 
           <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
