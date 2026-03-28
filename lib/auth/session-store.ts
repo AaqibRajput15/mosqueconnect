@@ -3,7 +3,7 @@ import type { User } from '@/lib/types'
 import { appDataStore, generateId } from '@/lib/server-data'
 import { verifyPassword } from './password'
 
-export type AuthProvider = 'credentials' | 'google' | 'microsoft'
+export type AuthProvider = 'credentials'
 
 export type AuthErrorCode =
   | 'invalid_credentials'
@@ -45,6 +45,27 @@ const credentialIdentities = new Map<string, IdentityRecord>()
 export const SESSION_TTL_SECONDS = 60 * 60 * 8
 const SESSION_TTL_MS = SESSION_TTL_SECONDS * 1000
 const SESSION_REFRESH_MS = 1000 * 60 * 30
+const SEEDED_PASSWORD_HASH =
+  'scrypt$32768$8$1$dcf95ef3274d2eb00873c0563186189d$a6ef3751c2d8fac2a5230bf5bb388cbfb57323b14c750d70170053bacc53838e3d1539f91b718368adc68c521f51595e31ec5b67fcacc7e62b83aaec5347a92a'
+
+function seedCredentialIdentityIfMissing(user: User) {
+  const normalizedEmail = user.email.toLowerCase().trim()
+  if (credentialIdentities.has(normalizedEmail)) return
+
+  credentialIdentities.set(normalizedEmail, {
+    userId: user.id,
+    email: normalizedEmail,
+    provider: 'credentials',
+    passwordHash: SEEDED_PASSWORD_HASH,
+    createdAt: Date.now(),
+  })
+}
+
+for (const user of appDataStore.users) {
+  if (user.email) {
+    seedCredentialIdentityIfMissing(user)
+  }
+}
 
 function createSessionRecord(userId: string, provider: AuthProvider): SessionRecord {
   const token = randomUUID()
@@ -87,24 +108,6 @@ export function createUser(email: string, name?: string): User {
 
   appDataStore.users.push(user)
   return user
-}
-
-export function startOAuth(
-  email: string,
-  provider: Exclude<AuthProvider, 'credentials'>,
-  intent: 'sign-in' | 'sign-up',
-): { session: SessionRecord | null; errorCode?: AuthErrorCode } {
-  const normalizedEmail = email.toLowerCase().trim()
-  if (!normalizedEmail) return { session: null, errorCode: 'account_not_found' }
-
-  const user = appDataStore.users.find((u) => u.email.toLowerCase() === normalizedEmail)
-
-  if (!user && intent === 'sign-in') {
-    return { session: null, errorCode: 'account_not_found' }
-  }
-
-  const resolvedUser = user ?? createUser(normalizedEmail, normalizedEmail)
-  return { session: createSessionForUserId(resolvedUser.id, provider) }
 }
 
 export function registerCredentialsAccount(input: RegisterCredentialsInput) {

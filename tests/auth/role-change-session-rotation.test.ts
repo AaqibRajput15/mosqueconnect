@@ -17,7 +17,7 @@ test('role changes invalidate existing target-user sessions immediately', async 
   const memberSignIn = await fetch(`${server.baseUrl}/api/auth/sign-in`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email: 'member@example.org', provider: 'credentials' }),
+    body: JSON.stringify({ email: 'member@example.org', password: 'password123' }),
   })
   assert.equal(memberSignIn.status, 200)
   const memberCookie = (memberSignIn.headers.get('set-cookie') ?? '').split(';')[0]
@@ -28,7 +28,7 @@ test('role changes invalidate existing target-user sessions immediately', async 
   const adminSignIn = await fetch(`${server.baseUrl}/api/auth/sign-in`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email: 'admin@mosqueconnect.org', provider: 'credentials' }),
+    body: JSON.stringify({ email: 'admin@mosqueconnect.org', password: 'password123' }),
   })
   assert.equal(adminSignIn.status, 200)
   const adminCookie = (adminSignIn.headers.get('set-cookie') ?? '').split(';')[0]

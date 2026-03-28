@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { serializeSessionCookie, setAuthCookie } from '@/lib/auth/cookies'
-import type { User } from '@/lib/types'
-import { appDataStore } from '@/lib/server-data'
-import { isSupabaseAuthEnabled, signUpWithSupabasePassword } from '@/lib/auth/supabase-auth'
+import { setAuthCookie } from '@/lib/auth/cookies'
+import { hashPassword } from '@/lib/auth/password'
+import { registerCredentialsAccount } from '@/lib/auth/session-store'
 
 const signUpSchema = z.object({
   email: z.string().trim().email(),
@@ -14,10 +13,6 @@ const signUpSchema = z.object({
 const GENERIC_AUTH_ERROR = 'Invalid email or password'
 
 export async function POST(request: Request) {
-  if (!isSupabaseAuthEnabled()) {
-    return NextResponse.json({ ok: false, error: 'Supabase auth is not configured' }, { status: 503 })
-  }
-
   let payload: unknown
 
   try {
@@ -31,37 +26,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: GENERIC_AUTH_ERROR }, { status: 400 })
   }
 
-  const session = await signUpWithSupabasePassword(parsed.data.email, parsed.data.password, {
-    display_name: parsed.data.name?.trim() || parsed.data.email,
+  const passwordHash = await hashPassword(parsed.data.password)
+  const registration = registerCredentialsAccount({
+    email: parsed.data.email,
+    name: parsed.data.name,
+    passwordHash,
   })
-
-  if (!session) {
-    return NextResponse.json({ ok: false, error: GENERIC_AUTH_ERROR }, { status: 401 })
+  if ('error' in registration) {
+    return NextResponse.json({ ok: false, error: GENERIC_AUTH_ERROR, errorCode: 'account_exists' }, { status: 409 })
   }
 
-  let user = appDataStore.users.find((candidate) => candidate.id === session.user.id)
-  if (!user) {
-    user = {
-      id: session.user.id,
-      email: parsed.data.email.toLowerCase().trim(),
-      name: parsed.data.name?.trim() || 'New User',
-      role: 'member',
-      createdAt: new Date().toISOString(),
-      emailVerified: false,
-    } satisfies User
-    appDataStore.users.push(user)
-  }
-
-  const response = NextResponse.json({ ok: true, user }, { status: 201 })
-  setAuthCookie(
-    response,
-    serializeSessionCookie({
-      accessToken: session.accessToken,
-      refreshToken: session.refreshToken,
-      expiresAt: session.expiresAt,
-      issuedAt: Date.now(),
-    }),
-  )
+  const response = NextResponse.json({ ok: true, user: registration.user }, { status: 201 })
+  setAuthCookie(response, registration.session.token)
 
   return response
 }

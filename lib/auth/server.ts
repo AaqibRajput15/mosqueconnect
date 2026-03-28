@@ -6,6 +6,7 @@ import { deserializeSessionCookie, serializeSessionCookie, type SessionCookiePay
 import { buildAuditContext, logAudit } from './audit-log'
 import { canAccessRoute, evaluatePermission, type AuthorizationScope, type Permission } from './permissions'
 import { canAccessPrivilegedRoute } from './email-verification-policy'
+import { resolveUserSession } from './session-store'
 import {
   getSupabaseUserFromAccessToken,
   isSupabaseAuthEnabled,
@@ -82,15 +83,26 @@ function hasVerifiedMfaFactor(authUser: SupabaseAuthUser | null) {
 }
 
 async function resolveAuthenticatedUser(request?: Request): Promise<{ user: User | null; authUser: SupabaseAuthUser | null; rotatedToken?: string }> {
-  if (!isSupabaseAuthEnabled()) return { user: null, authUser: null }
-
   const bearerToken = request ? getBearerToken(request) : undefined
   if (bearerToken) {
+    const localSession = resolveUserSession(bearerToken)
+    if (localSession.user) {
+      return { user: localSession.user, authUser: null, rotatedToken: localSession.rotatedToken }
+    }
+
+    if (!isSupabaseAuthEnabled()) return { user: null, authUser: null }
     const authUser = await getSupabaseUserFromAccessToken(bearerToken)
     return { user: resolveAppUser(authUser), authUser }
   }
 
   const cookieToken = request ? getTokenFromCookieHeader(request) : (await cookies()).get(AUTH_COOKIE)?.value
+  const localSession = resolveUserSession(cookieToken)
+  if (localSession.user) {
+    return { user: localSession.user, authUser: null, rotatedToken: localSession.rotatedToken }
+  }
+
+  if (!isSupabaseAuthEnabled()) return { user: null, authUser: null }
+
   const cookieSession = deserializeSessionCookie(cookieToken)
   if (!cookieSession) return { user: null, authUser: null }
 

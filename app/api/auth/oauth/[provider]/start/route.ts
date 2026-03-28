@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 export async function GET() {
   return NextResponse.json(
     {
-      error: 'Legacy OAuth start endpoint has been removed. Use /api/auth/oauth/google/start or /api/auth/oauth/microsoft/start.',
+      error: 'OAuth sign-in endpoints have been removed. Use email/password authentication.',
     },
     { status: 410 },
   )
@@ -12,7 +12,7 @@ export async function GET() {
 export async function POST() {
   return NextResponse.json(
     {
-      error: 'Legacy OAuth start endpoint has been removed. Use /api/auth/oauth/google/start or /api/auth/oauth/microsoft/start.',
+      error: 'OAuth sign-in endpoints have been removed. Use email/password authentication.',
     },
     { status: 410 },
   )

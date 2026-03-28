@@ -1,5 +1,5 @@
-import { oauthStart } from '@/lib/auth/oauth-routes'
+import { NextResponse } from 'next/server'
 
-export async function GET(request: Request) {
-  return oauthStart('google', request)
+export async function GET() {
+  return NextResponse.json({ error: 'Google OAuth sign-in has been removed. Use email/password sign-in.' }, { status: 410 })
 }

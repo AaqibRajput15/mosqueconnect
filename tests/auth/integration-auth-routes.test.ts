@@ -13,7 +13,7 @@ after(async () => {
   await stopNextServer(server)
 })
 
-test('auth API routes: sign-up, sign-in, oauth callback, sign-out, session', async () => {
+test('auth API routes: sign-up, sign-in, sign-out, session', async () => {
   const email = `integration-${Date.now()}@example.org`
 
   const signUpResponse = await fetch(`${server.baseUrl}/api/auth/sign-up`, {
@@ -28,19 +28,11 @@ test('auth API routes: sign-up, sign-in, oauth callback, sign-out, session', asy
   const signInResponse = await fetch(`${server.baseUrl}/api/auth/sign-in`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email: 'admin@mosqueconnect.org', provider: 'credentials' }),
+    body: JSON.stringify({ email: 'admin@mosqueconnect.org', password: 'password123' }),
   })
   assert.equal(signInResponse.status, 200)
   const signInCookie = (signInResponse.headers.get('set-cookie') ?? '').split(';')[0]
   assert.match(signInCookie, /mc_session=/)
-
-  const oauthResponse = await fetch(
-    `${server.baseUrl}/api/auth/oauth/callback?provider=google&email=oauth-${Date.now()}@example.org&name=OAuth+User`,
-    { redirect: 'manual' }
-  )
-  assert.equal(oauthResponse.status, 307)
-  assert.match(oauthResponse.headers.get('location') ?? '', /\/admin$/)
-  assert.match(oauthResponse.headers.get('set-cookie') ?? '', /mc_session=/)
 
   const sessionResponse = await fetch(`${server.baseUrl}/api/auth/session`, {
     headers: { cookie: signInCookie },
@@ -49,9 +41,16 @@ test('auth API routes: sign-up, sign-in, oauth callback, sign-out, session', asy
   assert.equal(sessionResponse.status, 200)
   assert.equal(sessionJson.user?.email, 'admin@mosqueconnect.org')
 
+  const csrfResponse = await fetch(`${server.baseUrl}/api/auth/csrf`, {
+    headers: { cookie: signInCookie },
+  })
+  const csrfBody = (await csrfResponse.json()) as { token: string }
+  const csrfCookie = (csrfResponse.headers.get('set-cookie') ?? '').split(';')[0]
+  const authAndCsrfCookie = `${signInCookie}; ${csrfCookie}`
+
   const signOutResponse = await fetch(`${server.baseUrl}/api/auth/sign-out`, {
     method: 'POST',
-    headers: { cookie: signInCookie },
+    headers: { cookie: authAndCsrfCookie, 'x-csrf-token': csrfBody.token },
   })
   assert.equal(signOutResponse.status, 200)
   assert.match(signOutResponse.headers.get('set-cookie') ?? '', /mc_session=;/)

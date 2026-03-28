@@ -19,8 +19,8 @@ test('hashing utility hashes and verifies password values', () => {
 })
 
 test('policy checks enforce role-based permissions and route guards', () => {
-  assert.equal(hasPermission('admin', 'finance:write'), true)
-  assert.equal(hasPermission('member', 'finance:write'), false)
+  assert.equal(hasPermission('admin', 'finance:create'), true)
+  assert.equal(hasPermission('member', 'finance:create'), false)
   assert.equal(canAccessRoute('admin', '/admin'), true)
   assert.equal(canAccessRoute('shura', '/shura'), true)
   assert.equal(canAccessRoute('member', '/shura'), false)
