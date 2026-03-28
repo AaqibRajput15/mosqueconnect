@@ -18,7 +18,7 @@ Optional/public values for frontend:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-> Never commit real service-role keys into git.
+> Never commit real service-role keys into git. Service-role keys must only be used on server runtime paths (never browser/client bundles).
 
 ### 2) Create database tables in Supabase
 

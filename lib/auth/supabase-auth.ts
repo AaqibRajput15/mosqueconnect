@@ -25,7 +25,8 @@ function getSupabaseAuthUrl(path: string) {
 }
 
 function getSupabaseApiKey() {
-  return SUPABASE_ANON_KEY ?? backendConfig.serviceRoleKey?.trim() ?? null
+  // Auth endpoints must never use the service-role key.
+  return SUPABASE_ANON_KEY ?? null
 }
 
 function hasAuthConfig() {
