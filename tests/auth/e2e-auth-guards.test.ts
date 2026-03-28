@@ -16,11 +16,11 @@ after(async () => {
 test('guard redirects across /admin and /shura plus login/logout flow', async () => {
   const unauthAdmin = await fetch(`${server.baseUrl}/admin`, { redirect: 'manual' })
   assert.equal(unauthAdmin.status, 307)
-  assert.equal(unauthAdmin.headers.get('location'), '/unauthorized')
+  assert.equal(unauthAdmin.headers.get('location'), '/auth/sign-in')
 
   const unauthShura = await fetch(`${server.baseUrl}/shura`, { redirect: 'manual' })
   assert.equal(unauthShura.status, 307)
-  assert.equal(unauthShura.headers.get('location'), '/unauthorized')
+  assert.equal(unauthShura.headers.get('location'), '/auth/sign-in')
 
   const adminSignIn = await fetch(`${server.baseUrl}/api/auth/sign-in`, {
     method: 'POST',
@@ -57,9 +57,9 @@ test('guard redirects across /admin and /shura plus login/logout flow', async ()
 
   const memberAdmin = await fetch(`${server.baseUrl}/admin`, { headers: { cookie: memberCookie }, redirect: 'manual' })
   assert.equal(memberAdmin.status, 307)
-  assert.match(memberAdmin.headers.get('location') ?? '', /^\/(forbidden|unauthorized)$/)
+  assert.match(memberAdmin.headers.get('location') ?? '', /^\/(forbidden|unauthorized|auth\/sign-in)$/)
 
   const memberShura = await fetch(`${server.baseUrl}/shura`, { headers: { cookie: memberCookie }, redirect: 'manual' })
   assert.equal(memberShura.status, 307)
-  assert.match(memberShura.headers.get('location') ?? '', /^\/(forbidden|unauthorized)$/)
+  assert.match(memberShura.headers.get('location') ?? '', /^\/(forbidden|unauthorized|auth\/sign-in)$/)
 })

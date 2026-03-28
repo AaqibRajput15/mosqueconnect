@@ -6,7 +6,7 @@ import { ShuraShell } from '@/components/shura/shura-shell'
 
 export default async function ShuraLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser()
-  if (!user) redirect('/unauthorized')
+  if (!user) redirect('/auth/sign-in')
   if (!canAccessRoute(user.role, '/shura')) redirect('/forbidden')
   if (!canAccessPrivilegedRoute(user)) redirect('/forbidden')
 

@@ -6,7 +6,7 @@ import { AdminShell } from '@/components/admin/admin-shell'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser()
-  if (!user) redirect('/unauthorized')
+  if (!user) redirect('/auth/sign-in')
   if (!canAccessRoute(user.role, '/admin')) redirect('/forbidden')
   if (!canAccessPrivilegedRoute(user)) redirect('/forbidden')
 
