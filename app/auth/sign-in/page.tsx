@@ -10,6 +10,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
+const DEFAULT_POST_SIGN_IN_PATH = '/community'
+
+interface SignInSuccessResponse {
+  ok: true
+  redirectTo?: string
+}
+
 export default function SignInPage() {
   const [email, setEmail] = useState('admin@mosqueconnect.org')
   const [password, setPassword] = useState('password123')
@@ -55,7 +62,9 @@ export default function SignInPage() {
         return
       }
 
-      router.push('/admin')
+      const data = (await response.json()) as SignInSuccessResponse
+      const destination = data.redirectTo || DEFAULT_POST_SIGN_IN_PATH
+      router.push(destination)
       router.refresh()
     } finally {
       setIsLoading(false)
