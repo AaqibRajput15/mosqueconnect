@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { setAuthCookie } from '@/lib/auth/cookies'
+import { getDefaultDashboard } from '@/lib/auth/server'
 import { authenticateWithCredentials, createSessionForUserId } from '@/lib/auth/session-store'
 
 const signInSchema = z.object({
@@ -30,7 +31,11 @@ export async function POST(request: Request) {
   }
   const session = createSessionForUserId(user.id, 'credentials')
 
-  const response = NextResponse.json({ ok: true, user })
+  const response = NextResponse.json({
+    ok: true,
+    user,
+    redirectTo: getDefaultDashboard(user.role),
+  })
   setAuthCookie(response, session.token)
 
   return response

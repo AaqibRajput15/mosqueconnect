@@ -22,7 +22,7 @@ export const roleHomeMap: Record<UserRole, string> = {
   admin: '/admin',
   shura: '/shura',
   mosque_admin: '/community',
-  member: '/community',
+  member: '/public-services',
   visitor: '/mosques',
 }
 
