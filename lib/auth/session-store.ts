@@ -154,12 +154,26 @@ export function revokeSession(token: string) {
   sessions.delete(token)
 }
 
+export function revokeAllSessionsForUser(userId: string) {
 export function rotateSessionsForPrivilegeChange(userId: string) {
   for (const [token, session] of sessions.entries()) {
     if (session.userId === userId) {
       sessions.delete(token)
     }
   }
+}
+
+export function updateCredentialsIdentityPassword(userId: string, passwordHash: string) {
+  for (const [email, identity] of credentialIdentities.entries()) {
+    if (identity.userId === userId) {
+      credentialIdentities.set(email, {
+        ...identity,
+        passwordHash,
+      })
+      return true
+    }
+  }
+  return false
 }
 
 export function getSessionByToken(token: string | undefined): SessionRecord | null {

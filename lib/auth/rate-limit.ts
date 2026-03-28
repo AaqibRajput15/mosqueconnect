@@ -27,6 +27,10 @@ export function getAuthRateLimitKey(request: Request, email: string) {
   return `${email.toLowerCase()}::${getClientIp(request)}`
 }
 
+export function getOneTimeTokenRateLimitKey(request: Request, email: string, purpose: 'verify_email' | 'reset_password') {
+  return `${purpose}::${email.toLowerCase()}::${getClientIp(request)}`
+}
+
 export function isLockedOut(key: string) {
   const record = attemptsByKey.get(key)
   if (!record?.lockUntil) return false
@@ -50,6 +54,20 @@ export function registerAuthFailure(key: string) {
 
 export function registerAuthSuccess(key: string) {
   attemptsByKey.delete(key)
+}
+
+export function registerRateLimitedAction(key: string) {
+  const record = getOrCreateRecord(key)
+  const now = Date.now()
+  record.attempts = record.attempts.filter((attemptAt) => now - attemptAt <= WINDOW_MS)
+  record.attempts.push(now)
+
+  if (record.attempts.length >= MAX_ATTEMPTS_PER_WINDOW) {
+    record.lockUntil = now + LOCKOUT_MS
+    return false
+  }
+
+  return true
 }
 
 export function getLockoutRetryAfterSeconds(key: string) {
